@@ -101,6 +101,10 @@ class MafiaMessageRequest(BaseModel):
     message: str = Field(min_length=1, max_length=500)
 
 
+class PublicMessageRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+
+
 class MafiaTargetVoteRequest(BaseModel):
     target_user_id: str
 

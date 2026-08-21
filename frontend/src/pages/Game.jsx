@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Skull, Stethoscope, Search, User, Moon, Sun, Vote, Trophy, Home, Eye, EyeOff } from "lucide-react";
 import MafiaRoom from "@/components/game/MafiaRoom";
+import PublicChat from "@/components/game/PublicChat";
 
 const ROLE_META = {
     MAFIA: { label: "Mafia", icon: Skull, color: "hsl(355,93%,60%)", bg: "from-[hsl(355,93%,46%)]/20", glow: "glow-mafia", desc: "هدفك القضاء على المواطنين" },
@@ -239,6 +240,11 @@ export default function Game() {
                         {phase === "NIGHT_RESULT" && <div className="font-display text-xl font-bold">📜 عرض نتيجة الليل...</div>}
                         {phase === "VOTE_RESULT" && <div className="font-display text-xl font-bold">📜 عرض نتيجة التصويت...</div>}
                     </div>
+                )}
+
+                {/* Public chat during day */}
+                {["DISCUSSION", "VOTING", "NIGHT_RESULT", "VOTE_RESULT"].includes(phase) && (
+                    <PublicChat roomId={roomId} currentPhase={phase} me={me} />
                 )}
 
                 {/* VOTING */}

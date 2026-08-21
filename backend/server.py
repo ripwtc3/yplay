@@ -16,6 +16,7 @@ from models import (
     RegisterRequest, LoginRequest, AuthResponse, UserPublic,
     CreateRoomRequest, JoinRoomRequest, RoomPublic, MafiaSettings,
     NightActionRequest, VoteRequest, MafiaMessageRequest, MafiaTargetVoteRequest,
+    PublicMessageRequest,
     ConnectedAccountCreate, ConnectedAccountPublic, uid, now_iso,
 )
 from auth import (
@@ -431,6 +432,23 @@ async def submit_mafia_target(room_id: str, payload: MafiaTargetVoteRequest, use
     if not ok:
         raise HTTPException(400, msg)
     return {"ok": True, "message": msg}
+
+
+# ============= Public Chat (Day Discussion) =============
+@api.post("/rooms/{room_id}/message")
+async def send_public_message(room_id: str, payload: PublicMessageRequest, user=Depends(get_current_user)):
+    ok, msg = await get_engine().send_public_message(room_id, user["id"], payload.message)
+    if not ok:
+        raise HTTPException(403, msg)
+    return {"ok": True, "message": msg}
+
+
+@api.get("/rooms/{room_id}/messages")
+async def list_public_messages(room_id: str, user=Depends(get_current_user)):
+    ok, msgs = await get_engine().list_public_messages(room_id, user["id"])
+    if not ok:
+        raise HTTPException(403, "غير مسموح")
+    return {"messages": msgs}
 
 
 # ============= Connected Accounts =============

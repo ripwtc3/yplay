@@ -308,6 +308,79 @@ class MafiaEngine:
         ).sort("created_at", 1).to_list(1000)
         return True, msgs
 
+    # ---------- Public Chat (Day Discussion) ----------
+    async def send_public_message(self, room_id: str, user_id: str, message: str) -> Tuple[bool, str]:
+        session = await self._get_session(room_id)
+        if not session:
+            return False, "الجلسة غير موجودة"
+        if session["current_phase"] not in ("DISCUSSION", "VOTING", "NIGHT_RESULT", "VOTE_RESULT"):
+            return False, "لا يمكن الكتابة في هذه المرحلة"
+
+        # Membership + alive check
+        role = self._get_role(session, user_id)
+        alive = self._is_alive(session, user_id)
+        is_host = user_id == session["host_id"]
+        if not role and not is_host:
+            return False, "لست في اللعبة"
+        # Eliminated players cannot post
+        if role and not alive:
+            return False, "خرجت من اللعبة — يمكنك المشاهدة فقط"
+
+        sender = next((p for p in session["players"] if p["user_id"] == user_id), None)
+        sender_name = sender["display_name"] if sender else "Host"
+
+        doc = {
+            "id": f"pmsg_{session['id']}_{session['round_number']}_{user_id}_{now_iso()}",
+            "session_id": session["id"],
+            "room_id": room_id,
+            "round_number": session["round_number"],
+            "sender_user_id": user_id,
+            "sender_display_name": sender_name,
+            "channel_type": "PUBLIC",
+            "message": message.strip()[:500],
+            "created_at": now_iso(),
+        }
+        await self.db.game_messages.insert_one(doc)
+
+        # Broadcast to all room subscribers
+        await ws_manager.broadcast_room(room_id, {
+            "type": "PUBLIC_MESSAGE",
+            "message": {
+                "id": doc["id"],
+                "sender_user_id": user_id,
+                "sender_display_name": sender_name,
+                "message": doc["message"],
+                "round_number": doc["round_number"],
+                "created_at": doc["created_at"],
+            },
+        })
+        return True, "تم الإرسال"
+
+    async def list_public_messages(self, room_id: str, user_id: str) -> Tuple[bool, List[dict]]:
+        session = await self._get_session(room_id)
+        if not session:
+            return False, []
+        # Must be a member (player or host)
+        role = self._get_role(session, user_id)
+        is_host = user_id == session["host_id"]
+        if not role and not is_host:
+            return False, []
+        msgs = await self.db.game_messages.find(
+            {"room_id": room_id, "channel_type": "PUBLIC"},
+            {"_id": 0},
+        ).sort("created_at", 1).to_list(1000)
+        return True, [
+            {
+                "id": m["id"],
+                "sender_user_id": m["sender_user_id"],
+                "sender_display_name": m["sender_display_name"],
+                "message": m["message"],
+                "round_number": m["round_number"],
+                "created_at": m["created_at"],
+            }
+            for m in msgs
+        ]
+
     # ---------- Mafia Target Voting ----------
     async def submit_mafia_target_vote(self, room_id: str, user_id: str, target_id: str) -> Tuple[bool, str]:
         session = await self._get_session(room_id)
