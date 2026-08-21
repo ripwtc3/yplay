@@ -1,0 +1,111 @@
+{
+  "theme": "dark",
+  "direction": "rtl",
+  "archetype": "Electric & Neon meets Luxury/Mystery",
+  "typography": {
+    "fonts": [
+      {
+        "name": "Changa",
+        "usage": "Main Headings, Numbers, Timers, Room Codes, and Massive UI text",
+        "link": "https://fonts.googleapis.com/css2?family=Changa:wght@400;600;800&display=swap"
+      },
+      {
+        "name": "IBM Plex Sans Arabic",
+        "usage": "Body text, Forms, Cards, UI labels, Chat/Discussion text",
+        "link": "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+      }
+    ],
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight font-extrabold font-['Changa']",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight font-bold font-['Changa']",
+      "h3": "text-xl sm:text-2xl font-bold font-['Changa']",
+      "body": "text-base font-['IBM_Plex_Sans_Arabic'] leading-relaxed",
+      "room_code": "text-5xl tracking-[0.2em] font-black font-['Changa'] uppercase"
+    }
+  },
+  "colors": {
+    "background": "hsl(240, 10%, 4%)",
+    "surface": "hsl(240, 10%, 6%)",
+    "primary": "hsl(355, 93%, 46%)",
+    "primary_glow": "rgba(229, 9, 20, 0.5)",
+    "accent_detective": "hsl(188, 100%, 50%)",
+    "accent_doctor": "hsl(146, 100%, 45%)",
+    "accent_citizen": "hsl(0, 0%, 80%)",
+    "text_main": "hsl(0, 0%, 98%)",
+    "text_muted": "hsl(240, 5%, 65%)",
+    "border": "hsl(240, 5%, 15%)",
+    "instructions_to_main_agent": "Overwrite index.css :root and .dark classes with these values. Map Mafia actions to primary red, Detective to cyan, Doctor to neon green, Citizen to neutral. The UI must be locked into Dark Mode."
+  },
+  "visual_enhancers": {
+    "surfaces": [
+      "Crystal Glass: Use for sticky headers or floating navs. backdrop-blur-xl bg-[#0a0a0a]/70 border-b border-white/10.",
+      "Card UI: Flat solid surfaces with 1px border-border and NO soft muddy drop-shadows. Apply sharp color border glow on hover.",
+      "Noise Overlay: Incorporate a very subtle CSS noise/grain texture on the main background to heighten the mysterious night vibe."
+    ],
+    "motion": [
+      "Buttons: Scale up slightly on hover (scale-105) and gain a drop-shadow matching their role color. DO NOT use 'transition-all'.",
+      "Timers: Must pulse (animate-pulse) intensely in Red when under 10 seconds.",
+      "Lists: Staggered fade-in and slide-up for players entering the Lobby.",
+      "Phase Changes: Screen should briefly flash or fade deeply to signify transition from Day (Discussion) to Night."
+    ]
+  },
+  "components": {
+    "buttons": "Large, pill-shaped or rounded-lg. High-contrast. 'Start Game' or 'Vote' must be massive, unmissable tap targets (Mobile-First!).",
+    "player_cards": "Dense, highly legible bento cards. Show Avatar, Arabic Name, Alive/Eliminated status. If eliminated, make the card grayscale with a dramatic strikethrough over the name.",
+    "inputs_and_forms": "Use customized Shadcn components. Background should match surface (not white). Focus states must ring in the Primary Blood Red.",
+    "room_code_display": "Massive typography (text-5xl or bigger). Include an obvious 'Copy Code' icon button that triggers a Sonner toast notification.",
+    "phase_indicators": "Icons for Night (🌙) and Day (☀️) alongside bold Changa typography indicating current state."
+  },
+  "layouts": {
+    "landing_page": "Asymmetrical split for Desktop (Hero text RTL, heavy background imagery), stacked on Mobile. Keep navigation clean.",
+    "lobby": "Room Code anchored at the top. Grid of player cards below. 'Start Game' button fixed to bottom on mobile, right-aligned on desktop.",
+    "in_game": "Role-specific private UI must be clearly highlighted. Night phase: minimal UI, focus on targets. Day phase: brighter accents, large voting buttons for each alive player."
+  },
+  "accessibility": [
+    "Contrast Ratio MUST exceed 4.5:1. Never use dark gray text on a black background.",
+    "Include data-testid attributes on ALL interactive elements (e.g., data-testid='login-btn', data-testid='vote-player-3').",
+    "RTL setup is mandatory. Use logical properties like ms- (margin-inline-start), me-, ps-, pe- instead of ml-, mr-. Add dir='rtl' to HTML tag."
+  ],
+  "image_urls": [
+    {
+      "url": "https://images.unsplash.com/photo-1761845081361-57b8453ce682?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2MzR8MHwxfHNlYXJjaHw0fHxtYWZpYSUyMG5pZ2h0JTIwY2l0eSUyMGRhcmslMjBteXN0ZXJpb3VzfGVufDB8fHx8MTc4NzI3MzA4NXww&ixlib=rb-4.1.0&q=85",
+      "category": "Hero Background",
+      "description": "Dark skyscraper at night. Essential for the Landing Page hero background. Apply an overlay like bg-black/60 to ensure text legibility."
+    },
+    {
+      "url": "https://images.pexels.com/photos/22739583/pexels-photo-22739583.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "category": "Mafia Role / Theme",
+      "description": "Vintage mafia style man counting money. Use for the Mafia role reveal card, dashboard flavor, or Game Over screen."
+    },
+    {
+      "url": "https://images.pexels.com/photos/7319085/pexels-photo-7319085.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "category": "Detective Role",
+      "description": "Magnifying glass revealing cryptic symbols. Ideal for the Detective role reveal card."
+    },
+    {
+      "url": "https://images.pexels.com/photos/5605062/pexels-photo-5605062.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "category": "Doctor Role",
+      "description": "Neon medical/pharmacy symbol. Ideal for the Doctor role reveal card."
+    }
+  ],
+  "libraries": {
+    "icons": "lucide-react (use for general UI), consider installing @phosphor-icons/react for premium duotone gaming icons if needed.",
+    "motion": "framer-motion for page transitions, role card flips, and staggered lists.",
+    "toast": "sonner for all in-game notifications (e.g., 'Player joined', 'Role revealed', 'Copied').",
+    "3d_libraries": "Do not overcomplicate with 3D for MVP. Use TSParticles (tsparticles, react-tsparticles) for a light background atmospheric effect (like floating ashes or dust) to add premium feel."
+  },
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic 'AI slop' outputs. Break the rules. Design a dark, atmospheric, highly tense gaming UI, not another SaaS dashboard.",
+    "CRITICAL: You must use Javascript/JSX (.js/.jsx). Do not generate TypeScript (.tsx) files.",
+    "CRITICAL: Set `<html dir='rtl' lang='ar'>` in public/index.html. Replace ml/mr/pl/pr with ms/me/ps/pe logical tailwind classes throughout the app.",
+    "Add 'Changa' and 'IBM Plex Sans Arabic' font links to public/index.html.",
+    "DO NOT center align the app container (.App { text-align: center; } is strictly banned).",
+    "Use 2-3x more spacing than typical. Breathing room makes the UI feel premium.",
+    "Never use placeholder URLs. Use ONLY the provided image_urls for visuals.",
+    "Every interaction needs micro-animations. Static equals dead. Animate card hovers, button clicks, and phase transitions.",
+    "Do NOT apply 'transition: all'. It breaks transforms. Explicitly write 'transition-transform transition-colors', etc.",
+    "All interactive elements (buttons, inputs, cards) MUST include a 'data-testid' attribute (e.g., data-testid='start-game-btn').",
+    "Never use fully transparent backgrounds on elements overlapping content (e.g., sticky headers). Use crystal glass styling (backdrop-blur + bg-opacity).",
+    "Shadcn components must be customized to fit the Dark Gaming theme. Drop white backgrounds, replace with surface dark grays and red rings."
+  ]
+}

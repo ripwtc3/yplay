@@ -1,0 +1,28 @@
+{
+  "summary": "Full backend end-to-end smoke of Mafia platform: auth, rooms, WS, and a complete 4-player game reaching GAME_OVER with all roles revealed. 24/24 checks passed.",
+  "tested_scope": ["backend", "auth", "integration"],
+  "passed": [
+    "POST /api/auth/register (JWT + user), duplicate email -> 400 Arabic",
+    "POST /api/auth/login wrong password -> 401",
+    "GET /api/auth/me with Bearer token",
+    "POST /api/rooms creates room with 6-char code, LOBBY, host auto-joined; invalid role-count settings rejected 400",
+    "POST /api/rooms/join case-insensitive; duplicate join idempotent",
+    "GET /api/rooms/{id} returns players+settings for member",
+    "POST /api/rooms/{id}/start non-host rejected with Arabic 'لست صاحب الغرفة'",
+    "Host start with full room -> ACTIVE, session created, ROLE_ASSIGNMENT -> NIGHT after ~5s",
+    "GET /api/rooms/{id}/state: me.role set for caller; session.players[*].role = null before GAME_OVER",
+    "Night action security: CITIZEN and DETECTIVE cannot KILL (400); MAFIA/DOCTOR/DETECTIVE only their allowed action",
+    "Detective INVESTIGATE result MAFIA/NOT_MAFIA visible via /state me.night_action.result",
+    "Duplicate night action same round -> 400",
+    "Voting: dead player cannot vote (400); duplicate vote -> 400",
+    "Full game reached GAME_OVER with winner and all roles revealed in session.players",
+    "WS /api/ws?token=<jwt>: CONNECTED, SUBSCRIBE_ROOM, PHASE_STARTED events received",
+    "WS invalid token closes 4401",
+    "WS ROLE_ASSIGNED_PRIVATE: each user received only their own role (no cross-contamination) across 4 players (CITIZEN/DETECTIVE/DOCTOR/MAFIA)"
+  ],
+  "failed": [],
+  "action_items": [],
+  "success_rate": {"backend": "100%", "frontend": "not tested (out of scope)"},
+  "retest_needed": false,
+  "full_testing_deferred": true
+}

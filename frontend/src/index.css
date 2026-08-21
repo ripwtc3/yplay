@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+    height: 100%;
+}
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: hsl(240 10% 4%);
+    color: hsl(0 0% 98%);
+    direction: rtl;
+}
+
+.font-display { font-family: 'Changa', system-ui, sans-serif; letter-spacing: -0.01em; }
+.font-body { font-family: 'IBM Plex Sans Arabic', system-ui, sans-serif; }
+
+@layer base {
+    :root {
+        --background: 240 10% 4%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 7%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 7%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 355 93% 46%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 240 5% 12%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 5% 12%;
+        --muted-foreground: 240 5% 65%;
+        --accent: 240 5% 14%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 240 5% 15%;
+        --input: 240 5% 15%;
+        --ring: 355 93% 46%;
+        --radius: 0.75rem;
+    }
+    .dark {
+        --background: 240 10% 4%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 7%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 10% 7%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 355 93% 46%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 240 5% 12%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 5% 12%;
+        --muted-foreground: 240 5% 65%;
+        --accent: 240 5% 14%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 240 5% 15%;
+        --input: 240 5% 15%;
+        --ring: 355 93% 46%;
+    }
+}
+
+@layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground; }
+}
+
+/* Noise texture overlay */
+.noise-bg {
+    position: relative;
+}
+.noise-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.09 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    opacity: 0.35;
+    pointer-events: none;
+    mix-blend-mode: overlay;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: hsl(240 10% 6%); }
+::-webkit-scrollbar-thumb { background: hsl(240 5% 18%); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(355 93% 46%); }
+
+/* Role glow */
+.glow-mafia { box-shadow: 0 0 32px -8px rgba(229, 9, 20, 0.6); }
+.glow-detective { box-shadow: 0 0 32px -8px rgba(0, 200, 255, 0.5); }
+.glow-doctor { box-shadow: 0 0 32px -8px rgba(0, 230, 118, 0.5); }
+.glow-citizen { box-shadow: 0 0 24px -8px rgba(255, 255, 255, 0.2); }
+
+.text-shadow-red { text-shadow: 0 0 24px rgba(229, 9, 20, 0.5); }
+
+/* Selection */
+::selection { background: hsl(355 93% 46% / 0.5); color: white; }
+
+/* Smooth entry */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fadeInUp 0.4s ease-out both; }
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 20px -6px rgba(229, 9, 20, 0.5); }
+    50% { box-shadow: 0 0 40px -6px rgba(229, 9, 20, 0.9); }
+}
+.pulse-glow { animation: pulseGlow 2s ease-in-out infinite; }
