@@ -46,10 +46,12 @@ class MafiaSettings(BaseModel):
     mafia_count: int = Field(ge=1, le=6)
     doctor_count: int = Field(ge=0, le=3)
     detective_count: int = Field(ge=0, le=3)
-    night_seconds: int = Field(ge=15, le=180, default=30)
+    mafia_discussion_seconds: int = Field(ge=10, le=180, default=20)
+    night_actions_seconds: int = Field(ge=15, le=180, default=30)
     discussion_seconds: int = Field(ge=15, le=300, default=60)
     voting_seconds: int = Field(ge=15, le=180, default=30)
     reveal_eliminated_role: bool = False
+    host_can_view_mafia_chat: bool = False
 
 
 class CreateRoomRequest(BaseModel):
@@ -77,16 +79,15 @@ class RoomPublic(BaseModel):
 
 
 class PlayerPublic(BaseModel):
-    """What everyone can see about a player. Never leaks role."""
     user_id: str
     display_name: str
     username: str
-    connection_status: str  # ONLINE / OFFLINE
+    connection_status: str
     alive: bool = True
     is_host: bool = False
 
 
-# =========== Night Action ===========
+# =========== Night Action / Vote ===========
 class NightActionRequest(BaseModel):
     action_type: Literal["KILL", "PROTECT", "INVESTIGATE"]
     target_user_id: str
@@ -94,3 +95,32 @@ class NightActionRequest(BaseModel):
 
 class VoteRequest(BaseModel):
     target_user_id: str
+
+
+class MafiaMessageRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+
+
+class MafiaTargetVoteRequest(BaseModel):
+    target_user_id: str
+
+
+# =========== Connected Accounts (streaming platforms) ===========
+PROVIDER_LITERAL = Literal["twitch", "youtube", "tiktok", "kick"]
+
+
+class ConnectedAccountCreate(BaseModel):
+    provider: PROVIDER_LITERAL
+    provider_username: str = Field(min_length=1, max_length=100)
+    channel_url: Optional[str] = Field(default=None, max_length=500)
+    display_name: Optional[str] = Field(default=None, max_length=100)
+
+
+class ConnectedAccountPublic(BaseModel):
+    id: str
+    provider: str
+    provider_username: str
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    channel_url: Optional[str] = None
+    connected_at: str

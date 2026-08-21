@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Users, LogOut, Skull, Trophy, Play } from "lucide-react";
+import { Gamepad2, Users, LogOut, Skull, Trophy, Play, UserCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 
@@ -24,9 +24,14 @@ export default function Dashboard() {
                         </div>
                         <span className="text-xl font-extrabold">لايف <span className="text-[hsl(355,93%,60%)]">ألعاب</span></span>
                     </div>
-                    <Button data-testid="logout-btn" onClick={() => { logout(); nav("/"); }} variant="ghost" className="text-white/70 hover:bg-white/10">
-                        <LogOut className="w-4 h-4 ms-2" /> خروج
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button data-testid="nav-profile-btn" onClick={() => nav("/profile")} variant="ghost" className="text-white/70 hover:bg-white/10">
+                            <UserCircle className="w-4 h-4 ms-2" /> حسابي
+                        </Button>
+                        <Button data-testid="logout-btn" onClick={() => { logout(); nav("/"); }} variant="ghost" className="text-white/70 hover:bg-white/10">
+                            <LogOut className="w-4 h-4 ms-2" /> خروج
+                        </Button>
+                    </div>
                 </div>
             </nav>
 

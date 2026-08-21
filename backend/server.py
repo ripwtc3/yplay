@@ -1,9 +1,13 @@
 """FastAPI server for the multiplayer Mafia platform."""
+from dotenv import load_dotenv
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / ".env")
+
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import load_dotenv
-from pathlib import Path
 import os
 import logging
 import re
@@ -11,7 +15,8 @@ import re
 from models import (
     RegisterRequest, LoginRequest, AuthResponse, UserPublic,
     CreateRoomRequest, JoinRoomRequest, RoomPublic, MafiaSettings,
-    NightActionRequest, VoteRequest, uid, now_iso,
+    NightActionRequest, VoteRequest, MafiaMessageRequest, MafiaTargetVoteRequest,
+    ConnectedAccountCreate, ConnectedAccountPublic, uid, now_iso,
 )
 from auth import (
     hash_password, verify_password, create_token,
@@ -19,9 +24,6 @@ from auth import (
 )
 from ws_manager import ws_manager
 from mafia_engine import init_engine, get_engine, generate_room_code
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
 
 # MongoDB
 mongo_url = os.environ["MONGO_URL"]
@@ -53,6 +55,8 @@ async def on_startup():
         [("session_id", 1), ("round_number", 1), ("voter_id", 1)],
         unique=True,
     )
+    await db.game_messages.create_index([("room_id", 1), ("created_at", 1)])
+    await db.connected_accounts.create_index([("user_id", 1), ("provider", 1)], unique=True)
     init_engine(db)
     logger.info("Startup complete.")
 
@@ -315,6 +319,10 @@ async def game_state(room_id: str, user=Depends(get_current_user)):
     room = await db.rooms.find_one({"id": room_id}, {"_id": 0})
     if not room:
         raise HTTPException(404, "الغرفة غير موجودة")
+    # Membership check (same as get_room)
+    membership = await db.room_players.find_one({"room_id": room_id, "user_id": user["id"]})
+    if not membership and room["host_id"] != user["id"]:
+        raise HTTPException(403, "لست عضواً في الغرفة")
     session = await db.game_sessions.find_one({"room_id": room_id}, {"_id": 0})
     my_role = None
     my_alive = True
@@ -398,6 +406,94 @@ async def cast_vote(room_id: str, payload: VoteRequest, user=Depends(get_current
     if not ok:
         raise HTTPException(400, msg)
     return {"ok": True, "message": msg}
+
+
+# ============= Mafia Private Chat & Target Vote =============
+@api.get("/rooms/{room_id}/mafia-state")
+async def mafia_state(room_id: str, user=Depends(get_current_user)):
+    state = await get_engine().get_mafia_private_state(room_id, user["id"])
+    if state is None:
+        raise HTTPException(403, "غير مسموح لك بالوصول لهذه الغرفة السرية")
+    return state
+
+
+@api.post("/rooms/{room_id}/mafia-message")
+async def send_mafia_message(room_id: str, payload: MafiaMessageRequest, user=Depends(get_current_user)):
+    ok, msg = await get_engine().send_mafia_message(room_id, user["id"], payload.message)
+    if not ok:
+        raise HTTPException(403, msg)
+    return {"ok": True, "message": msg}
+
+
+@api.post("/rooms/{room_id}/mafia-target-vote")
+async def submit_mafia_target(room_id: str, payload: MafiaTargetVoteRequest, user=Depends(get_current_user)):
+    ok, msg = await get_engine().submit_mafia_target_vote(room_id, user["id"], payload.target_user_id)
+    if not ok:
+        raise HTTPException(400, msg)
+    return {"ok": True, "message": msg}
+
+
+# ============= Connected Accounts =============
+def _account_public(doc: dict) -> ConnectedAccountPublic:
+    return ConnectedAccountPublic(
+        id=doc["id"],
+        provider=doc["provider"],
+        provider_username=doc["provider_username"],
+        display_name=doc.get("display_name"),
+        avatar_url=doc.get("avatar_url"),
+        channel_url=doc.get("channel_url"),
+        connected_at=doc["connected_at"],
+    )
+
+
+PROVIDER_BASE_URL = {
+    "twitch": "https://www.twitch.tv/",
+    "youtube": "https://www.youtube.com/@",
+    "tiktok": "https://www.tiktok.com/@",
+    "kick": "https://kick.com/",
+}
+
+
+@api.get("/users/me/connected-accounts")
+async def list_connected(user=Depends(get_current_user)):
+    docs = await db.connected_accounts.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
+    return {"accounts": [_account_public(d).model_dump() for d in docs]}
+
+
+@api.post("/users/me/connected-accounts", response_model=ConnectedAccountPublic)
+async def add_connected(payload: ConnectedAccountCreate, user=Depends(get_current_user)):
+    handle = payload.provider_username.strip().lstrip("@")
+    if not handle:
+        raise HTTPException(400, "اسم القناة مطلوب")
+    channel_url = payload.channel_url or (PROVIDER_BASE_URL.get(payload.provider, "") + handle)
+    doc = {
+        "id": uid(),
+        "user_id": user["id"],
+        "provider": payload.provider,
+        "provider_username": handle,
+        "provider_account_id": None,
+        "display_name": payload.display_name or handle,
+        "avatar_url": None,
+        "channel_url": channel_url,
+        "access_token_encrypted": None,
+        "refresh_token_encrypted": None,
+        "token_expires_at": None,
+        "connected_at": now_iso(),
+        "updated_at": now_iso(),
+    }
+    try:
+        await db.connected_accounts.insert_one(doc)
+    except Exception:
+        raise HTTPException(400, "لديك حساب مربوط بالفعل بهذه المنصة — احذفه أولاً")
+    return _account_public(doc)
+
+
+@api.delete("/users/me/connected-accounts/{account_id}")
+async def delete_connected(account_id: str, user=Depends(get_current_user)):
+    res = await db.connected_accounts.delete_one({"id": account_id, "user_id": user["id"]})
+    if res.deleted_count == 0:
+        raise HTTPException(404, "الحساب غير موجود")
+    return {"ok": True}
 
 
 # ============= WebSocket =============

@@ -7,7 +7,7 @@ from fastapi import HTTPException, Depends, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "change-me-in-prod-super-secret-key")
+JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALG = "HS256"
 JWT_EXP_HOURS = 24 * 7  # 7 days
 

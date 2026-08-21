@@ -5,6 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Skull, Stethoscope, Search, User, Moon, Sun, Vote, Trophy, Home, Eye, EyeOff } from "lucide-react";
+import MafiaRoom from "@/components/game/MafiaRoom";
 
 const ROLE_META = {
     MAFIA: { label: "Mafia", icon: Skull, color: "hsl(355,93%,60%)", bg: "from-[hsl(355,93%,46%)]/20", glow: "glow-mafia", desc: "هدفك القضاء على المواطنين" },
@@ -26,6 +27,16 @@ function Countdown({ endsAt }) {
     return <span className={critical ? "text-[hsl(355,93%,60%)] animate-pulse" : ""}>{remaining}s</span>;
 }
 
+const PHASE_LABELS = {
+    ROLE_ASSIGNMENT: "توزيع الأدوار...",
+    MAFIA_DISCUSSION: "اجتماع المافيا",
+    NIGHT_ACTIONS: "حركات الليل",
+    NIGHT_RESULT: "نتيجة الليل",
+    DISCUSSION: "النقاش",
+    VOTING: "التصويت",
+    VOTE_RESULT: "نتيجة التصويت",
+};
+
 export default function Game() {
     const { roomId } = useParams();
     const nav = useNavigate();
@@ -45,12 +56,12 @@ export default function Game() {
         }
     };
 
-    useEffect(() => { load(); }, [roomId]);
-    useEffect(() => { if (wsReady) subscribeRoom(roomId); }, [wsReady, roomId]);
+    useEffect(() => { load(); /* eslint-disable-next-line */ }, [roomId]);
+    useEffect(() => { if (wsReady) subscribeRoom(roomId); }, [wsReady, roomId, subscribeRoom]);
 
     useEffect(() => {
         const off = addListener((msg) => {
-            if (msg.type === "PHASE_STARTED" || msg.type === "NIGHT_RESULT" || msg.type === "VOTE_RESULT" || msg.type === "GAME_OVER" || msg.type === "GAME_STARTED") {
+            if (["PHASE_STARTED", "NIGHT_RESULT", "VOTE_RESULT", "GAME_OVER", "GAME_STARTED", "NIGHT_ACTION_CONFIRMED", "VOTE_SUBMITTED"].includes(msg.type)) {
                 load();
                 if (msg.type === "NIGHT_RESULT") {
                     if (msg.eliminated) toast.warning(`تم إخراج ${msg.eliminated.display_name} هذه الليلة`);
@@ -64,11 +75,6 @@ export default function Game() {
             } else if (msg.type === "INVESTIGATION_RESULT") {
                 setInvestigation(msg);
                 toast.success(`${msg.target_name}: ${msg.result === "MAFIA" ? "MAFIA ✗" : "مواطن ✓"}`);
-            } else if (msg.type === "NIGHT_ACTION_CONFIRMED") {
-                toast.success("تم تسجيل حركتك");
-                load();
-            } else if (msg.type === "VOTE_SUBMITTED") {
-                load();
             } else if (msg.type === "PLAYER_ONLINE" || msg.type === "PLAYER_OFFLINE") {
                 load();
             }
@@ -79,7 +85,7 @@ export default function Game() {
     const submitNight = async (targetId) => {
         setBusy(true);
         try {
-            const map = { MAFIA: "KILL", DOCTOR: "PROTECT", DETECTIVE: "INVESTIGATE" };
+            const map = { DOCTOR: "PROTECT", DETECTIVE: "INVESTIGATE" };
             await api.post(`/rooms/${roomId}/night-action`, { action_type: map[state.me.role], target_user_id: targetId });
         } catch (err) {
             toast.error(err.response?.data?.detail || "خطأ");
@@ -107,6 +113,9 @@ export default function Game() {
     const me = state.me || {};
     const meta = ROLE_META[me.role] || ROLE_META.CITIZEN;
     const RoleIcon = meta.icon;
+    const isMafia = me.role === "MAFIA";
+    const isNight = ["MAFIA_DISCUSSION", "NIGHT_ACTIONS", "NIGHT_RESULT", "ROLE_ASSIGNMENT"].includes(phase);
+    const hostCanViewMafia = state.room?.settings?.host_can_view_mafia_chat && user?.id === state.room?.host_id;
 
     // GAME OVER
     if (phase === "GAME_OVER") {
@@ -142,24 +151,17 @@ export default function Game() {
         );
     }
 
-    const isNight = phase === "NIGHT" || phase === "NIGHT_RESULT" || phase === "ROLE_ASSIGNMENT";
     const bgClass = isNight ? "bg-[hsl(240,10%,3%)]" : "bg-[hsl(240,10%,8%)]";
 
     return (
         <div className={`min-h-screen transition-colors ${bgClass}`}>
-            {/* Phase header */}
             <div className="sticky top-0 z-40 backdrop-blur-xl bg-black/60 border-b border-white/10">
                 <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         {isNight ? <Moon className="w-6 h-6 text-cyan-300" /> : <Sun className="w-6 h-6 text-yellow-300" />}
                         <div>
                             <div className="font-display font-bold text-lg" data-testid="phase-name">
-                                {phase === "NIGHT" && "الليل"}
-                                {phase === "NIGHT_RESULT" && "نتيجة الليل"}
-                                {phase === "DISCUSSION" && "النقاش"}
-                                {phase === "VOTING" && "التصويت"}
-                                {phase === "VOTE_RESULT" && "نتيجة التصويت"}
-                                {phase === "ROLE_ASSIGNMENT" && "توزيع الأدوار..."}
+                                {PHASE_LABELS[phase] || phase}
                             </div>
                             <div className="text-xs text-white/50 font-body">الجولة {roundNum}</div>
                         </div>
@@ -170,9 +172,8 @@ export default function Game() {
                 </div>
             </div>
 
-            {/* Body */}
             <div className="max-w-5xl mx-auto px-6 py-8">
-                {/* My Role banner */}
+                {/* Role banner */}
                 {me.role && (
                     <div className={`rounded-2xl border border-white/10 bg-gradient-to-br ${meta.bg} to-transparent p-5 mb-6 ${meta.glow}`}>
                         <div className="flex items-center justify-between gap-4">
@@ -197,22 +198,41 @@ export default function Game() {
                     </div>
                 )}
 
-                {/* ROLE_ASSIGNMENT loading */}
+                {/* ROLE_ASSIGNMENT */}
                 {phase === "ROLE_ASSIGNMENT" && (
                     <div className="text-center py-16 font-body text-white/60 fade-in-up">
                         <div className="animate-pulse text-2xl font-display font-bold">توزيع الأدوار سراً...</div>
                     </div>
                 )}
 
-                {/* NIGHT: role-specific action UI */}
-                {phase === "NIGHT" && me.alive && (
-                    <NightPhase me={me} alivePlayers={alivePlayers.filter(p => p.user_id !== user.id)} onSubmit={submitNight} busy={busy} />
+                {/* MAFIA private room */}
+                {(phase === "MAFIA_DISCUSSION" || phase === "NIGHT_ACTIONS" || phase === "NIGHT_RESULT") && (isMafia || hostCanViewMafia) && me.alive !== false && (
+                    <MafiaRoom roomId={roomId} currentPhase={phase} me={me} />
                 )}
-                {phase === "NIGHT" && !me.alive && (
+
+                {/* Non-mafia messages during night */}
+                {phase === "MAFIA_DISCUSSION" && !isMafia && !hostCanViewMafia && (
+                    <div className="rounded-xl border border-white/10 bg-card p-6 text-center font-body text-white/70 mb-6">
+                        <Moon className="w-8 h-8 mx-auto mb-3 text-cyan-300" />
+                        <div className="font-display text-xl font-bold">الليل مستمر...</div>
+                        <div className="text-sm text-white/50 mt-1">انتظر دورك — Mafia تتشاور</div>
+                    </div>
+                )}
+
+                {/* NIGHT_ACTIONS: role-specific for Doctor/Detective */}
+                {phase === "NIGHT_ACTIONS" && me.alive && (me.role === "DOCTOR" || me.role === "DETECTIVE") && (
+                    <NightAction me={me} alivePlayers={alivePlayers.filter(p => p.user_id !== user.id)} onSubmit={submitNight} busy={busy} />
+                )}
+                {phase === "NIGHT_ACTIONS" && me.role === "CITIZEN" && me.alive && (
+                    <div className="rounded-xl border border-white/10 bg-card p-6 text-center font-body text-white/70 mb-6">
+                        🌙 ليس لديك حركة ليلية — انتظر بداية النهار
+                    </div>
+                )}
+                {phase === "NIGHT_ACTIONS" && !me.alive && (
                     <div className="rounded-xl border border-white/10 bg-card p-6 text-center text-white/60 font-body">🌙 الليل — أنت مشاهد فقط</div>
                 )}
 
-                {/* NIGHT_RESULT / VOTE_RESULT / DISCUSSION - just show players */}
+                {/* Result / Discussion */}
                 {(phase === "NIGHT_RESULT" || phase === "VOTE_RESULT" || phase === "DISCUSSION") && (
                     <div className="rounded-xl border border-white/10 bg-card p-6 mb-6 text-center font-body">
                         {phase === "DISCUSSION" && <div className="font-display text-xl font-bold">☀️ ناقشوا واكشفوا Mafia</div>}
@@ -250,7 +270,6 @@ export default function Game() {
                     </div>
                 )}
 
-                {/* Investigation history */}
                 {investigation && me.role === "DETECTIVE" && (
                     <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 mb-6 font-body">
                         <div className="text-cyan-300 font-display font-bold mb-1">تحقيقك (جولة {investigation.round_number})</div>
@@ -258,7 +277,7 @@ export default function Game() {
                     </div>
                 )}
 
-                {/* All players grid */}
+                {/* All players */}
                 <div>
                     <h4 className="font-display font-bold mb-3 text-white/70">اللاعبون</h4>
                     <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -287,28 +306,15 @@ export default function Game() {
     );
 }
 
-function NightPhase({ me, alivePlayers, onSubmit, busy }) {
+function NightAction({ me, alivePlayers, onSubmit, busy }) {
     const [selected, setSelected] = useState(null);
     const meta = ROLE_META[me.role];
     const already = !!me.night_action;
-
-    const label = {
-        MAFIA: "اختر لاعباً لاستهدافه",
-        DOCTOR: "اختر لاعباً لحمايته",
-        DETECTIVE: "اختر لاعباً للتحقيق معه",
-    }[me.role];
-
-    if (me.role === "CITIZEN") {
-        return (
-            <div className="rounded-xl border border-white/10 bg-card p-6 text-center font-body text-white/70">
-                🌙 ليس لديك حركة ليلية — انتظر بداية النهار
-            </div>
-        );
-    }
+    const label = { DOCTOR: "اختر لاعباً لحمايته", DETECTIVE: "اختر لاعباً للتحقيق معه" }[me.role];
 
     if (already) {
         return (
-            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 font-body text-emerald-300 text-center">
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 font-body text-emerald-300 text-center mb-6">
                 ✓ تم تسجيل حركتك الليلية
             </div>
         );

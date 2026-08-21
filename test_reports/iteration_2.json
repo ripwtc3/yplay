@@ -1,0 +1,111 @@
+{
+  "summary": "Backend-only testing of Arabic Mafia iteration 2 (MAFIA_DISCUSSION phase, mafia private chat, mafia target voting, host viewer mode, connected accounts, WS channel isolation). Built a pytest regression suite of 43 tests across 7 files: 42 PASS, 1 FAIL (intentional security probe). All requested feature scenarios pass, including a full 4-player game LOBBY->...->GAME_OVER, tie=no-kill, doctor-protect-saves, and WebSocket privacy (only mafia sockets receive MAFIA_MESSAGE / MAFIA_TARGET_VOTE). Two real defects found: (1) GET /rooms/{id}/state has NO membership check, (2) backend/.env line 3 is malformed so JWT_SECRET and CORS_ORIGINS are never loaded and auth falls back to a hardcoded default secret.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/rooms/{room_id}/state",
+        "issue": "No membership/authorization check. Any authenticated user (non-member, non-host) gets 200 with full live session: current_phase, round_number, phase_started_at/phase_ends_at, and the complete player roster (user_id, username, display_name, alive, is_host). GET /api/rooms/{room_id} correctly returns 403 for the same user, so this is an inconsistent authz gap. Roles are still null so no role leak, but alive/dead + timers of any room are readable by anyone who knows the room_id. Repro: /app/backend/tests/test_state_membership.py",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "config: /app/backend/.env + /app/backend/auth.py",
+        "issue": "/app/backend/.env line 3 is `CORS_ORIGINS=\"*\"JWT_SECRET=very-secret-...` (missing newline). python-dotenv logs 'could not parse statement starting at line 3' and silently drops BOTH keys — dotenv_values('.env') returns only MONGO_URL and DB_NAME, and neither key is in the backend process env. Result: auth.py signs/verifies all JWTs with the hardcoded fallback 'change-me-in-prod-super-secret-key'. Secondary bug: even after fixing the newline it would still be ignored, because server.py imports `from auth import ...` (line 17) BEFORE calling load_dotenv() (line 25), and auth.py reads JWT_SECRET at module import time. Fix both: repair the .env newline AND move load_dotenv() above the local imports (or read JWT_SECRET lazily).",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/rooms/{id}/start",
+        "issue": "Handler does `await asyncio.sleep(5)` then `_start_phase()` inline, so the HTTP request blocks ~5s and the ROLE_ASSIGNMENT->MAFIA_DISCUSSION transition is coupled to the request lifetime. Should be scheduled with asyncio.create_task so a client timeout/disconnect cannot leave a game stuck in ROLE_ASSIGNMENT."
+      },
+      {
+        "endpoint": "engine state (mafia_engine._tasks, ws_manager.mafia_channel)",
+        "issue": "Phase timers and the mafia WS sub-channel live only in process memory. Any backend restart / hot-reload permanently freezes every in-flight game (phase never advances again) and empties mafia_channel so broadcast_mafia stops delivering. No startup recovery/rehydration exists. Verified by code review only."
+      },
+      {
+        "endpoint": "POST /api/rooms/{id}/mafia-target-vote",
+        "issue": "Returns 400 for a non-mafia caller while /mafia-message returns 403 for the same authorization failure. Inconsistent status codes for the same class of error (spec-accepted, but worth aligning)."
+      },
+      {
+        "endpoint": "GET /api/rooms/mine",
+        "issue": "Uses room_players.find_one({'user_id': ...}) with no sort and no status filter. A user with several memberships gets an arbitrary row; if that row belongs to a FINISHED/CANCELLED room the endpoint returns {'room': null} even though the user is in an ACTIVE room."
+      },
+      {
+        "endpoint": "GET /api/rooms/{id}/mafia-state",
+        "issue": "Returns the entire MAFIA message history for all rounds (no round_number filter, limit 500). Also, if host_can_view_mafia_chat is true the host keeps full read+write access to the mafia channel even after being eliminated. Both may be intentional — confirm product intent."
+      },
+      {
+        "endpoint": "engine _resolve_night / _resolve_voting",
+        "issue": "Both read the session, mutate the in-memory players list, then $set the whole players array. Any concurrent write (e.g. a late elimination) is silently lost. Prefer targeted positional updates."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/conftest.py",
+    "/app/backend/tests/test_health_and_validation.py",
+    "/app/backend/tests/test_connected_accounts.py",
+    "/app/backend/tests/test_mafia_discussion.py",
+    "/app/backend/tests/test_game_flow.py",
+    "/app/backend/tests/test_host_viewer.py",
+    "/app/backend/tests/test_ws_mafia_privacy.py",
+    "/app/backend/tests/test_night_resolution.py",
+    "/app/backend/tests/test_state_membership.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "passed": [
+    "Settings: create room with mafia_discussion_seconds/night_actions_seconds/host_can_view_mafia_chat persists & echoes correctly; defaults 20/30/false applied when omitted",
+    "Settings validation: mafia_discussion_seconds 9/181, night_actions_seconds 14/181, discussion_seconds 14, voting_seconds 400, host_can_view_mafia_chat='maybe' all -> 422; bad role distribution -> 400 Arabic",
+    "Transition: ROLE_ASSIGNMENT -> MAFIA_DISCUSSION after ~5s, round_number=1, phase_ends_at set",
+    "GET /mafia-state: alive MAFIA -> 200 with teammates(2), available_targets(4, zero mafia leaked), phase_ends_at, current_phase, is_viewer=false, messages[]",
+    "SECURITY GET /mafia-state: CITIZEN/DOCTOR/DETECTIVE -> 403 with Arabic detail; non-member -> 403; eliminated player -> 403; after GAME_OVER -> 403",
+    "POST /mafia-message: both mafia post 200, persisted and visible to both via /mafia-state.messages with correct sender + round_number; CITIZEN/DOCTOR/DETECTIVE -> 403 and their text never enters the channel; empty and 501-char messages -> 422; posting during DISCUSSION -> 403",
+    "POST /mafia-target-vote: valid non-mafia alive target -> 200; upsertable (A then B, my_target_vote=B, exactly one row in current_votes); teammate -> 400 'لا يمكن استهداف زميل Mafia'; self -> 400; unknown target -> 400; non-mafia -> 400; during DISCUSSION -> 400",
+    "NIGHT_ACTIONS: mafia can change kill target and still chat; DOCTOR PROTECT 200 (duplicate -> 400); DETECTIVE INVESTIGATE 200 with result='MAFIA' surfaced via /state me.night_action.result; CITIZEN night action -> 400",
+    "PROTECT and INVESTIGATE during MAFIA_DISCUSSION -> 400 'ليس وقت الحركة الليلية'",
+    "Night resolution: majority kill eliminates target; split mafia votes (tie) = no kill (all 6 alive); doctor PROTECT on the mafia target saves them",
+    "SECURITY /state: session.players[*].role is null for every caller before GAME_OVER; me.mafia_partners == [] for non-mafia and has 1 entry for the 2nd mafia; mafia chat text never appears in /state",
+    "host_can_view_mafia_chat=true: host gets 200 with is_viewer=true and can post into the mafia chat (visible to real mafia); other non-mafia players still 403; non-mafia host cannot cast a target vote (400)",
+    "host_can_view_mafia_chat=false: non-mafia host -> 403; every non-mafia member -> 403 (mafia member 200 with is_viewer=false)",
+    "Full 4-player game: MAFIA_DISCUSSION -> NIGHT_ACTIONS -> NIGHT_RESULT -> DISCUSSION -> VOTING -> VOTE_RESULT -> GAME_OVER; winner=CITIZENS, all 4 roles revealed correctly, room.status=FINISHED; dead player cannot vote (400)",
+    "WebSocket: 4 clients subscribed — only the mafia socket received MAFIA_MESSAGE (with payload) and MAFIA_TARGET_VOTE; the 3 non-mafia sockets received neither event nor the secret text. Invalid token closes the socket; non-member SUBSCRIBE_ROOM -> ERROR frame",
+    "Connected Accounts: POST for twitch/youtube/tiktok/kick returns correct channel_url (twitch.tv/x, youtube.com/@x, tiktok.com/@x, kick.com/x); '@handle' prefix stripped; custom channel_url + display_name respected; GET lists all; duplicate provider -> 400; DELETE 200 then 404; invalid provider 'facebook' -> 422; empty username -> 422; unauthenticated -> 401; accounts are per-user (B cannot see or delete A's)",
+    "No MongoDB _id leaked in any response checked (rooms, state, mafia-state, connected accounts)"
+  ],
+  "action_items": [
+    "HIGH: Add a membership/host check to GET /api/rooms/{room_id}/state (mirror GET /api/rooms/{room_id}) — currently any authenticated user can read any room's live session.",
+    "CRITICAL: Fix /app/backend/.env line 3 (insert the missing newline between CORS_ORIGINS and JWT_SECRET) AND move load_dotenv() in server.py above the `from auth import ...` import, otherwise JWT_SECRET stays the hardcoded fallback. Restart backend after the .env change.",
+    "MEDIUM: Schedule the post-ROLE_ASSIGNMENT transition with asyncio.create_task instead of blocking POST /rooms/{id}/start for 5s.",
+    "MEDIUM: Persist/rehydrate phase timers and the mafia sub-channel on startup so a backend restart does not freeze live games.",
+    "LOW: Align status codes (mafia-target-vote 400 vs mafia-message 403 for the same authz failure) and fix GET /rooms/mine membership selection."
+  ],
+  "critical_code_review_comments": [
+    "server.py game_state(): the only guard is get_current_user — no room_players lookup. Copy the 403 check used in get_room().",
+    "auth.py: JWT_SECRET is resolved at module import with a hardcoded insecure default; combined with load_dotenv() running after the auth import in server.py, the env value can never take effect. Remove the default so misconfiguration fails fast.",
+    "mafia_engine.start_game(): `await asyncio.sleep(5)` inside a request handler couples game progression to the HTTP request.",
+    "mafia_engine._tasks and ws_manager.mafia_channel are process-local; there is no reconciliation on startup, so a redeploy/hot-reload strands every ACTIVE room.",
+    "_resolve_night/_resolve_voting write the whole session['players'] array from a stale read — lost-update risk."
+  ],
+  "updated_files": [
+    "/app/backend/tests/conftest.py (new)",
+    "/app/backend/tests/test_health_and_validation.py (new)",
+    "/app/backend/tests/test_connected_accounts.py (new)",
+    "/app/backend/tests/test_mafia_discussion.py (new)",
+    "/app/backend/tests/test_game_flow.py (new)",
+    "/app/backend/tests/test_host_viewer.py (new)",
+    "/app/backend/tests/test_ws_mafia_privacy.py (new)",
+    "/app/backend/tests/test_night_resolution.py (new)",
+    "/app/backend/tests/test_state_membership.py (new)"
+  ],
+  "success_rate": {"backend": "97.7% (42/43 — the 1 failure is the /state authorization gap)", "frontend": "not tested (backend-only scope)"},
+  "seed_data_creation": "No seed data retained. Every test registers fresh users with emails prefixed test_/display names prefixed TEST_ and rooms named TEST_room_*; a class-scoped Mongo teardown (conftest.mongo_cleanup) deletes the users, rooms, room_players, game_sessions, game_messages, mafia_actions, votes and connected_accounts it created. Credentials in /app/memory/test_credentials.md were NOT used (dynamic registration per the request) — that file is present and valid.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "/app/memory/test_credentials.md present and usable; tests register users dynamically instead (password secret123 for all generated users).",
+  "context_for_next_testing_agent": "Regression suite lives in /app/backend/tests/ and runs green except test_state_membership.py, which is an intentional failing probe for the missing authz check on GET /rooms/{id}/state — it should turn PASS once the main agent fixes it. Full suite: `cd /app/backend && python -m pytest tests/ -v --junitxml=/app/test_reports/pytest/pytest_results.xml` (~200s; pytest.ini forces -n 2 --dist loadscope, so each class must be self-contained — it is). Helpers in conftest.py: register_user, create_room, join_room, get_state, wait_for_phase, roles_map, mongo_cleanup. Timing notes: rooms only start when player_count == max_players; POST /start blocks ~5s; use mafia_discussion_seconds=180/night_actions_seconds=180 for classes that need a long static window and 12-30s for full-flow runs. WS tests use the `websockets` package via asyncio.run inside sync tests (no pytest-asyncio installed). Frontend was not touched.",
+  "rca_of_the_issue": "1) GET /rooms/{id}/state: the handler fetches room + game_session and returns them after only resolving the bearer token; unlike get_room() it never queries room_players, so authorization is missing entirely. 2) JWT secret: /app/backend/.env line 3 concatenates CORS_ORIGINS and JWT_SECRET without a newline, so python-dotenv aborts parsing that statement and drops both keys (confirmed: dotenv_values returns only MONGO_URL/DB_NAME and /proc/<backend pid>/environ has neither). auth.py then falls back to its hardcoded default. Additionally server.py calls load_dotenv() only after importing auth, so auth's module-level os.environ.get('JWT_SECRET') would read an unpopulated environment even with a well-formed .env."
+}

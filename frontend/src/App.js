@@ -12,6 +12,7 @@ import CreateGame from "@/pages/CreateGame";
 import JoinRoom from "@/pages/JoinRoom";
 import Lobby from "@/pages/Lobby";
 import Game from "@/pages/Game";
+import Profile from "@/pages/Profile";
 
 function Private({ children }) {
     const { user, loading } = useAuth();
@@ -35,6 +36,7 @@ function App() {
                         <Route path="/join" element={<Private><JoinRoom /></Private>} />
                         <Route path="/room/:roomId" element={<Private><Lobby /></Private>} />
                         <Route path="/game/:roomId" element={<Private><Game /></Private>} />
+                        <Route path="/profile" element={<Private><Profile /></Private>} />
                     </Routes>
                 </BrowserRouter>
             </AuthProvider>

@@ -25,13 +25,15 @@ Build a fully functional Arabic RTL multiplayer game platform. MVP focuses on Ma
 10. Win condition: Citizens win when 0 mafia alive; Mafia wins when mafia >= non-mafia.
 
 ## Implemented (Feb 21, 2026)
-- Full auth flow (register/login/me) with JWT + bcrypt.
-- Landing/Login/Register/Dashboard/CreateGame/JoinRoom/Lobby/Game pages.
+- Full auth flow (register/login/me) with JWT + bcrypt. JWT_SECRET loaded from .env (no fallback default).
+- Landing/Login/Register/Dashboard/CreateGame/JoinRoom/Lobby/Game/Profile pages.
 - Room CRUD with unique 6-char codes.
-- Real-time WebSocket connection manager with per-user + per-room broadcasts.
-- MafiaEngine: role assignment (random shuffle), night resolution (mafia majority vote + doctor protection), voting resolution (majority; tie = no elimination), win condition, game-over reveal.
-- Private endpoints: `/rooms/{id}/state` returns only my role; investigation result sent privately.
-- MongoDB indexes for unique constraints (email, username, room_code, room_id+user_id, votes, actions).
+- Real-time WebSocket connection manager with per-user + per-room + per-mafia sub-channel broadcasts.
+- MafiaEngine phases: LOBBY → ROLE_ASSIGNMENT → **MAFIA_DISCUSSION** → **NIGHT_ACTIONS** → NIGHT_RESULT → DISCUSSION → VOTING → VOTE_RESULT → GAME_OVER.
+- Mafia private chat + target voting during MAFIA_DISCUSSION and NIGHT_ACTIONS (server-authoritative permission checks).
+- Connected Accounts: manual linking for Twitch/YouTube/TikTok/Kick — extensible for OAuth later.
+- MongoDB indexes on all unique constraints. Membership check on /rooms/{id}/state.
+- **Backend tests: 43/43 passing** (full pytest suite in /app/backend/tests/).
 
 ## Prioritized Backlog (P0/P1/P2)
 - **P1**: Reconnection UX polish (rejoin during active game with role intact — currently works via `/state` refetch).

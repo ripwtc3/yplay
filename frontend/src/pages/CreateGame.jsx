@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { ArrowRight, Skull, Stethoscope, Search } from "lucide-react";
+import { ArrowRight, Skull, Stethoscope, Search, Moon, MessageSquare, Sun, Vote as VoteIcon } from "lucide-react";
 
 export default function CreateGame() {
     const nav = useNavigate();
@@ -17,15 +17,17 @@ export default function CreateGame() {
         mafia_count: 1,
         doctor_count: 1,
         detective_count: 1,
-        night_seconds: 30,
+        mafia_discussion_seconds: 20,
+        night_actions_seconds: 30,
         discussion_seconds: 60,
         voting_seconds: 30,
         reveal_eliminated_role: false,
+        host_can_view_mafia_chat: false,
     });
 
     const num = (k, min, max) => (
         <div className="flex items-center gap-3 justify-between">
-            <span className="font-body text-white/80">{k.label}</span>
+            <span className="font-body text-white/80 text-sm">{k.label}</span>
             <div className="flex items-center gap-2">
                 <button
                     data-testid={`${k.field}-dec-btn`}
@@ -96,15 +98,32 @@ export default function CreateGame() {
                         {totalSpecial >= s.max_players && <div className="text-red-300 text-sm mt-1">مجموع الأدوار الخاصة يجب أن يكون أقل من عدد اللاعبين</div>}
                     </div>
 
-                    <div className="grid sm:grid-cols-3 gap-4">
-                        <div className="rounded-xl border border-white/10 p-4 bg-black/30">
-                            {num({ field: "night_seconds", label: "الليل (ث)" }, 15, 180)}
+                    {/* Night settings section */}
+                    <div className="rounded-xl border border-white/10 p-4 bg-gradient-to-br from-cyan-500/5 to-transparent">
+                        <div className="flex items-center gap-2 mb-4"><Moon className="w-4 h-4 text-cyan-300" /> <span className="font-display font-bold">إعدادات الليل</span></div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <div className="rounded-lg border border-white/10 p-3 bg-black/30">
+                                <div className="text-xs text-white/50 mb-2 font-body flex items-center gap-1"><MessageSquare className="w-3 h-3" /> اجتماع Mafia</div>
+                                {num({ field: "mafia_discussion_seconds", label: "المدة (ث)" }, 10, 180)}
+                            </div>
+                            <div className="rounded-lg border border-white/10 p-3 bg-black/30">
+                                <div className="text-xs text-white/50 mb-2 font-body flex items-center gap-1"><Skull className="w-3 h-3" /> حركات الليل</div>
+                                {num({ field: "night_actions_seconds", label: "المدة (ث)" }, 15, 180)}
+                            </div>
                         </div>
-                        <div className="rounded-xl border border-white/10 p-4 bg-black/30">
-                            {num({ field: "discussion_seconds", label: "النقاش (ث)" }, 15, 300)}
-                        </div>
-                        <div className="rounded-xl border border-white/10 p-4 bg-black/30">
-                            {num({ field: "voting_seconds", label: "التصويت (ث)" }, 15, 180)}
+                    </div>
+
+                    <div className="rounded-xl border border-white/10 p-4 bg-gradient-to-br from-yellow-500/5 to-transparent">
+                        <div className="flex items-center gap-2 mb-4"><Sun className="w-4 h-4 text-yellow-300" /> <span className="font-display font-bold">إعدادات النهار</span></div>
+                        <div className="grid sm:grid-cols-2 gap-3">
+                            <div className="rounded-lg border border-white/10 p-3 bg-black/30">
+                                <div className="text-xs text-white/50 mb-2 font-body">النقاش (ث)</div>
+                                {num({ field: "discussion_seconds", label: "المدة" }, 15, 300)}
+                            </div>
+                            <div className="rounded-lg border border-white/10 p-3 bg-black/30">
+                                <div className="text-xs text-white/50 mb-2 font-body flex items-center gap-1"><VoteIcon className="w-3 h-3" /> التصويت (ث)</div>
+                                {num({ field: "voting_seconds", label: "المدة" }, 15, 180)}
+                            </div>
                         </div>
                     </div>
 
@@ -114,6 +133,14 @@ export default function CreateGame() {
                             <div className="text-white/50 text-sm font-body mt-1">Reveal Eliminated Role</div>
                         </div>
                         <Switch data-testid="reveal-role-switch" checked={s.reveal_eliminated_role} onCheckedChange={(v) => setS({ ...s, reveal_eliminated_role: v })} />
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl border border-white/10 p-4 bg-black/30">
+                        <div>
+                            <div className="font-body font-bold">مشاهدة Chat Mafia للـHost</div>
+                            <div className="text-white/50 text-sm font-body mt-1">مفيد للبث — لا يستطيع الكتابة بل يشاهد فقط</div>
+                        </div>
+                        <Switch data-testid="host-view-mafia-switch" checked={s.host_can_view_mafia_chat} onCheckedChange={(v) => setS({ ...s, host_can_view_mafia_chat: v })} />
                     </div>
 
                     <Button
