@@ -558,6 +558,29 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
                 })
             elif mtype == "PING":
                 await websocket.send_json({"type": "PONG"})
+            elif mtype == "TYPING_START" or mtype == "TYPING_STOP":
+                # relay typing indicator to same room / channel with authorization
+                room_id = msg.get("room_id")
+                channel = msg.get("channel", "PUBLIC")  # PUBLIC | MAFIA
+                if not room_id:
+                    continue
+                # verify user is a member
+                membership = await db.room_players.find_one({"room_id": room_id, "user_id": user_id})
+                room = await db.rooms.find_one({"id": room_id})
+                if not membership and (not room or room["host_id"] != user_id):
+                    continue
+                payload = {
+                    "type": mtype,
+                    "user_id": user_id,
+                    "display_name": user.get("display_name"),
+                    "channel": channel,
+                }
+                if channel == "MAFIA":
+                    if not ws_manager.is_mafia_authorized(room_id, user_id):
+                        continue
+                    await ws_manager.broadcast_mafia(room_id, payload)
+                else:
+                    await ws_manager.broadcast_room(room_id, payload, exclude=user_id)
     except WebSocketDisconnect:
         pass
     except Exception as e:

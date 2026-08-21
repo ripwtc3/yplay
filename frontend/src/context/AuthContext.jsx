@@ -61,6 +61,12 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+    const wsSend = useCallback((payload) => {
+        if (wsRef.current && wsRef.current.readyState === 1) {
+            wsRef.current.send(JSON.stringify(payload));
+        }
+    }, []);
+
     const login = async (email, password) => {
         const res = await api.post("/auth/login", { email, password });
         localStorage.setItem("token", res.data.token);
@@ -83,7 +89,7 @@ export function AuthProvider({ children }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, addListener, subscribeRoom, wsReady }}>
+        <AuthContext.Provider value={{ user, loading, login, register, logout, addListener, subscribeRoom, wsSend, wsReady }}>
             {children}
         </AuthContext.Provider>
     );
