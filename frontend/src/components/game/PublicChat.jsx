@@ -23,7 +23,9 @@ export default function PublicChat({ roomId, currentPhase, me, compact = false }
         try {
             const r = await api.get(`/rooms/${roomId}/messages`);
             setMessages(r.data.messages || []);
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            console.warn("messages load failed", e);
+        }
     };
 
     useEffect(() => { load(); /* eslint-disable-next-line */ }, [roomId]);

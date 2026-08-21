@@ -7,11 +7,11 @@ load_dotenv(ROOT_DIR / ".env")
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 import re
 
+from database import db, mongo_client
 from models import (
     RegisterRequest, LoginRequest, AuthResponse, UserPublic,
     CreateRoomRequest, JoinRoomRequest, RoomPublic, MafiaSettings,
@@ -26,10 +26,8 @@ from auth import (
 from ws_manager import ws_manager
 from mafia_engine import init_engine, get_engine, generate_room_code
 
-# MongoDB
-mongo_url = os.environ["MONGO_URL"]
-mongo_client = AsyncIOMotorClient(mongo_url)
-db = mongo_client[os.environ["DB_NAME"]]
+# MongoDB (imported from database module to avoid circular imports)
+# db, mongo_client available via `from database import db, mongo_client`
 
 # App
 app = FastAPI(title="Mafia Platform")

@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="49" time="215.401" timestamp="2026-08-21T02:22:47.409692+00:00" hostname="agent-env-b7e626c1-d365-4040-aeb3-98958859667b"><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_full_crud_and_url_generation" time="2.033" /><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_handle_with_at_prefix_is_stripped" time="0.583" /><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_custom_channel_url_respected" time="0.459" /><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_invalid_provider_422" time="0.475" /><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_empty_username_422" time="0.441" /><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_requires_auth" time="0.131" /><testcase classname="tests.test_connected_accounts.TestConnectedAccounts" name="test_accounts_are_per_user" time="1.060" /><testcase classname="tests.test_health_and_validation.TestRoomSettingsValidation" name="test_create_room_with_new_settings" time="0.684" /><testcase classname="tests.test_health_and_validation.TestRoomSettingsValidation" name="test_settings_defaults" time="0.430" /><testcase classname="tests.test_health_and_validation.TestRoomSettingsValidation" name="test_invalid_ranges_return_422" time="0.898" /><testcase classname="tests.test_health_and_validation.TestRoomSettingsValidation" name="test_invalid_role_distribution_400" time="0.469" /><testcase classname="tests.test_health_and_validation.TestRoomSettingsValidation" name="test_host_can_view_mafia_chat_bad_type_422" time="0.467" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_phase_is_mafia_discussion" time="10.165" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_role_distribution" time="0.000" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_mafia_can_read_private_state" time="0.101" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_non_mafia_forbidden_from_mafia_state" time="0.379" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_mafia_message_flow" time="0.298" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_non_mafia_cannot_send_mafia_message" time="0.357" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_message_validation" time="0.154" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_target_vote_valid_and_upsertable" time="0.313" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_cannot_target_mafia_teammate" time="0.084" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_cannot_target_self" time="0.087" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_non_mafia_cannot_target_vote" time="0.252" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_target_vote_unknown_target" time="0.091" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_doctor_protect_rejected_during_mafia_discussion" time="0.083" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_detective_investigate_rejected_during_mafia_discussion" time="0.093" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_state_does_not_leak_roles_or_mafia_data" time="0.600" /><testcase classname="tests.test_mafia_discussion.TestMafiaDiscussion" name="test_non_member_cannot_read_state_or_mafia_state" time="0.666" /><testcase classname="tests.test_ws_mafia_privacy.TestWebSocketMafiaPrivacy" name="test_invalid_token_rejected" time="0.200" /><testcase classname="tests.test_host_viewer.TestHostViewerEnabled" name="test_host_can_read_mafia_state" time="7.715" /><testcase classname="tests.test_host_viewer.TestHostViewerEnabled" name="test_non_mafia_players_still_blocked" time="0.170" /><testcase classname="tests.test_host_viewer.TestHostViewerEnabled" name="test_host_can_post_into_mafia_chat" time="0.131" /><testcase classname="tests.test_host_viewer.TestHostViewerEnabled" name="test_host_observer_cannot_target_vote_unless_mafia" time="0.163" /><testcase classname="tests.test_ws_mafia_privacy.TestWebSocketMafiaPrivacy" name="test_mafia_events_only_reach_mafia_sockets" time="26.129" /><testcase classname="tests.test_host_viewer.TestHostViewerDisabled" name="test_non_mafia_host_blocked" time="7.664" /><testcase classname="tests.test_host_viewer.TestHostViewerDisabled" name="test_all_non_mafia_blocked" time="0.631" /><testcase classname="tests.test_stats_and_chat.TestSecretsRandomness" name="test_room_codes_use_safe_alphabet" time="1.200" /><testcase classname="tests.test_stats_and_chat.TestSecretsRandomness" name="test_role_distribution_6_players" time="8.577" /><testcase classname="tests.test_stats_and_chat.TestFreshUserStats" name="test_fresh_user_zero_stats" time="0.554" /><testcase classname="tests.test_stats_and_chat.TestFreshUserStats" name="test_stats_requires_auth" time="0.182" /><testcase classname="tests.test_ws_mafia_privacy.TestWebSocketMafiaPrivacy" name="test_non_member_cannot_subscribe_to_room" time="3.612" /><testcase classname="tests.test_game_flow.TestFullGameFlow" name="test_full_round_to_game_over" time="105.345" /><testcase classname="tests.test_health_and_validation.TestHealth" name="test_root" time="0.118" /><testcase classname="tests.test_health_and_validation.TestHealth" name="test_unauthenticated_rejected" time="0.135" /><testcase classname="tests.test_state_membership.TestStateMembership" name="test_outsider_cannot_read_game_state" time="48.962" /><testcase classname="tests.test_stats_and_chat.TestAuthAfterDbRefactor" name="test_register_login_me_and_ws" time="10.853"><failure message="TimeoutError: timed out during opening handshake">self = &lt;websockets.asyncio.client.connect object at 0xfd637806e210&gt;
+
+    async def __await_impl__(self) -&gt; ClientConnection:
+        try:
+            async with asyncio_timeout(self.open_timeout):
+                for _ in range(MAX_REDIRECTS):
+&gt;                   self.connection = await self.create_connection()
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/client.py:555: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/client.py:470: in create_connection
+    _, connection = await loop.create_connection(factory, **kwargs)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:1070: in create_connection
+    sock = await self._connect_sock(
+/usr/local/lib/python3.11/asyncio/base_events.py:974: in _connect_sock
+    await self.sock_connect(sock, address)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;_UnixSelectorEventLoop running=False closed=True debug=False&gt;
+sock = &lt;socket.socket [closed] fd=-1, family=2, type=1, proto=6&gt;
+address = ('104.18.10.243', 443)
+
+    async def sock_connect(self, sock, address):
+        """Connect to a remote socket at address.
+    
+        This method is a coroutine.
+        """
+        base_events._check_ssl_socket(sock)
+        if self._debug and sock.gettimeout() != 0:
+            raise ValueError("the socket must be non-blocking")
+    
+        if sock.family == socket.AF_INET or (
+                base_events._HAS_IPv6 and sock.family == socket.AF_INET6):
+            resolved = await self._ensure_resolved(
+                address, family=sock.family, type=sock.type, proto=sock.proto,
+                loop=self,
+            )
+            _, _, _, _, address = resolved[0]
+    
+        fut = self.create_future()
+        self._sock_connect(fut, sock, address)
+        try:
+&gt;           return await fut
+                   ^^^^^^^^^
+E           asyncio.exceptions.CancelledError
+
+/usr/local/lib/python3.11/asyncio/selector_events.py:638: CancelledError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;websockets.asyncio.client.connect object at 0xfd637806e210&gt;
+
+    async def __await_impl__(self) -&gt; ClientConnection:
+        try:
+&gt;           async with asyncio_timeout(self.open_timeout):
+
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/client.py:553: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Timeout [expired]&gt;
+exc_type = &lt;class 'asyncio.exceptions.CancelledError'&gt;
+exc_val = CancelledError(), exc_tb = &lt;traceback object at 0xfd6378087300&gt;
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -&gt; Optional[bool]:
+        assert self._state in (_State.ENTERED, _State.EXPIRING)
+    
+        if self._timeout_handler is not None:
+            self._timeout_handler.cancel()
+            self._timeout_handler = None
+    
+        if self._state is _State.EXPIRING:
+            self._state = _State.EXPIRED
+    
+            if self._task.uncancel() &lt;= self._cancelling and exc_type is exceptions.CancelledError:
+                # Since there are no new cancel requests, we're
+                # handling this.
+&gt;               raise TimeoutError from exc_val
+E               TimeoutError
+
+/usr/local/lib/python3.11/asyncio/timeouts.py:115: TimeoutError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;test_stats_and_chat.TestAuthAfterDbRefactor object at 0xfd6379b0da90&gt;
+make_user = &lt;function make_user.&lt;locals&gt;._make at 0xfd6378060d60&gt;
+
+    def test_register_login_me_and_ws(self, make_user):
+        u = make_user("dbref")
+        assert isinstance(u["token"], str) and len(u["token"]) &gt; 20
+    
+        # login with the same credentials
+        r = requests.post(f"{API}/auth/login",
+                          json={"email": u["email"], "password": "secret123"}, timeout=30)
+        assert r.status_code == 200, r.text[:300]
+        data = r.json()
+        assert data["user"]["id"] == u["user"]["id"]
+        assert '"_id"' not in json.dumps(data)
+    
+        # /auth/me with the freshly issued token
+        s = requests.Session()
+        s.headers.update({"Authorization": f"Bearer {data['token']}"})
+        me = s.get(f"{API}/auth/me", timeout=30)
+        assert me.status_code == 200, me.text[:300]
+        assert me.json()["email"] == u["email"].lower()
+    
+        # WebSocket auth (auth.py uses `from database import db` lazily)
+        async def run():
+            async with websockets.connect(f"{WS_URL}?token={u['token']}") as ws:
+                raw = await asyncio.wait_for(ws.recv(), timeout=10)
+                return json.loads(raw)
+    
+&gt;       first = asyncio.run(run())
+                ^^^^^^^^^^^^^^^^^^
+
+tests/test_stats_and_chat.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/asyncio/runners.py:190: in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/runners.py:118: in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/asyncio/base_events.py:654: in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+tests/test_stats_and_chat.py:59: in run
+    async with websockets.connect(f"{WS_URL}?token={u['token']}") as ws:
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/client.py:601: in __aenter__
+    return await self
+           ^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;websockets.asyncio.client.connect object at 0xfd637806e210&gt;
+
+    async def __await_impl__(self) -&gt; ClientConnection:
+        try:
+            async with asyncio_timeout(self.open_timeout):
+                for _ in range(MAX_REDIRECTS):
+                    self.connection = await self.create_connection()
+                    try:
+                        await self.connection.handshake(
+                            self.additional_headers,
+                            self.user_agent_header,
+                        )
+                    except asyncio.CancelledError:
+                        self.connection.transport.abort()
+                        raise
+                    except Exception as exc:
+                        # Always close the connection even though keep-alive is
+                        # the default in HTTP/1.1 because create_connection ties
+                        # opening the network connection with initializing the
+                        # protocol. In the current design of connect(), there is
+                        # no easy way to reuse the network connection that works
+                        # in every case nor to reinitialize the protocol.
+                        self.connection.transport.abort()
+    
+                        uri_or_exc = self.process_redirect(exc)
+                        # Response is a valid redirect; follow it.
+                        if isinstance(uri_or_exc, str):
+                            self.uri = uri_or_exc
+                            continue
+                        # Response isn't a valid redirect; raise the exception.
+                        if uri_or_exc is exc:
+                            raise
+                        else:
+                            raise uri_or_exc from exc
+    
+                    else:
+                        self.connection.start_keepalive()
+                        return self.connection
+                else:
+                    raise SecurityError(f"more than {MAX_REDIRECTS} redirects")
+    
+        except TimeoutError as exc:
+            # Re-raise exception with an informative error message.
+&gt;           raise TimeoutError("timed out during opening handshake") from exc
+E           TimeoutError: timed out during opening handshake
+
+/root/.venv/lib/python3.11/site-packages/websockets/asyncio/client.py:592: TimeoutError</failure></testcase><testcase classname="tests.test_stats_and_chat.TestChatWhisperAndStatsAfterGame" name="test_whisper_public_chat_and_stats" time="110.168" /><testcase classname="tests.test_night_resolution.TestTieNoKill" name="test_split_mafia_votes_results_in_no_kill" time="36.246" /><testcase classname="tests.test_night_resolution.TestDoctorProtectSaves" name="test_protected_target_survives" time="35.937" /></testsuite></testsuites>

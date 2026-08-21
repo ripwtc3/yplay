@@ -145,10 +145,10 @@ export default function Dashboard() {
                                 <div>
                                     <div className="text-xs text-white/50 font-body mb-2">آخر المباريات</div>
                                     <div className="space-y-2">
-                                        {stats.recent.map((g, i) => {
+                                        {stats.recent.map((g) => {
                                             const Icon = ROLE_ICONS[g.role];
                                             return (
-                                                <div key={i} data-testid={`recent-game-${i}`} className="rounded-lg border border-white/10 bg-black/30 p-3 flex items-center justify-between gap-3">
+                                                <div key={`${g.room_id}-${g.ended_at}`} data-testid={`recent-game-${g.room_id}`} className="rounded-lg border border-white/10 bg-black/30 p-3 flex items-center justify-between gap-3">
                                                     <div className="flex items-center gap-2">
                                                         <Icon className={`w-4 h-4 ${ROLE_COLORS[g.role]}`} />
                                                         <span className="font-body text-sm">{ROLE_AR[g.role]}</span>

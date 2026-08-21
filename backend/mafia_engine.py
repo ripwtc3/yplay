@@ -15,7 +15,7 @@ During NIGHT_ACTIONS:
   - Detective submits INVESTIGATE
 """
 import asyncio
-import random
+import secrets
 import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple, Set
@@ -33,7 +33,16 @@ ROLES = ["MAFIA", "CITIZEN", "DOCTOR", "DETECTIVE"]
 
 def generate_room_code(length: int = 6) -> str:
     alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-    return "".join(random.choices(alphabet, k=length))
+    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+
+def _secure_shuffle(items: list) -> list:
+    """Fisher-Yates shuffle using `secrets` for cryptographic randomness."""
+    a = list(items)
+    for i in range(len(a) - 1, 0, -1):
+        j = secrets.randbelow(i + 1)
+        a[i], a[j] = a[j], a[i]
+    return a
 
 
 class MafiaEngine:
@@ -103,8 +112,7 @@ class MafiaEngine:
         if needed >= len(players):
             return False, "توزيع الأدوار غير صحيح"
 
-        shuffled = players.copy()
-        random.shuffle(shuffled)
+        shuffled = _secure_shuffle(players)
         idx = 0
         for _ in range(settings["mafia_count"]):
             shuffled[idx]["role"] = "MAFIA"; idx += 1

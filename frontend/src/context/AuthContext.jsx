@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { api, wsUrl } from "@/lib/api";
 
 const AuthContext = createContext(null);
@@ -11,17 +11,20 @@ export function AuthProvider({ children }) {
     const listenersRef = useRef(new Set());
     const roomIdRef = useRef(null);
 
-    // Load user from token
+    // Load user from token on mount
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) { setLoading(false); return; }
         api.get("/auth/me")
             .then((res) => setUser(res.data))
-            .catch(() => localStorage.removeItem("token"))
+            .catch((err) => {
+                console.warn("auth/me failed", err?.response?.status);
+                localStorage.removeItem("token");
+            })
             .finally(() => setLoading(false));
     }, []);
 
-    // Setup WS whenever user is set
+    // Setup WS whenever user changes
     useEffect(() => {
         if (!user) {
             if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
@@ -42,10 +45,15 @@ export function AuthProvider({ children }) {
             try {
                 const data = JSON.parse(ev.data);
                 listenersRef.current.forEach((cb) => cb(data));
-            } catch (e) { /* ignore */ }
+            } catch (err) {
+                console.warn("ws message parse failed", err);
+            }
         };
         ws.onclose = () => setWsReady(false);
-        ws.onerror = () => setWsReady(false);
+        ws.onerror = (err) => {
+            console.warn("ws error", err);
+            setWsReady(false);
+        };
         return () => { ws.close(); };
     }, [user]);
 
@@ -67,32 +75,32 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
-    const login = async (email, password) => {
+    const login = useCallback(async (email, password) => {
         const res = await api.post("/auth/login", { email, password });
         localStorage.setItem("token", res.data.token);
         setUser(res.data.user);
         return res.data.user;
-    };
+    }, []);
 
-    const register = async (payload) => {
+    const register = useCallback(async (payload) => {
         const res = await api.post("/auth/register", payload);
         localStorage.setItem("token", res.data.token);
         setUser(res.data.user);
         return res.data.user;
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         localStorage.removeItem("token");
         setUser(null);
         roomIdRef.current = null;
         if (wsRef.current) wsRef.current.close();
-    };
+    }, []);
 
-    return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, addListener, subscribeRoom, wsSend, wsReady }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    const value = useMemo(() => ({
+        user, loading, login, register, logout, addListener, subscribeRoom, wsSend, wsReady,
+    }), [user, loading, login, register, logout, addListener, subscribeRoom, wsSend, wsReady]);
+
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

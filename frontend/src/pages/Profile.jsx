@@ -26,12 +26,12 @@ export default function Profile() {
     const [busy, setBusy] = useState(false);
 
     const load = async () => {
-        setLoading(true);
         try {
             const r = await api.get("/users/me/connected-accounts");
             setAccounts(r.data.accounts || []);
-        } catch (e) { /* ignore */ }
-        finally { setLoading(false); }
+        } catch (e) {
+            console.warn("connected-accounts load failed", e);
+        } finally { setLoading(false); }
     };
 
     useEffect(() => { load(); }, []);

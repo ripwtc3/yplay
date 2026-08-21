@@ -23,7 +23,9 @@ export default function WhisperPanel({ roomId, currentPhase, me, alivePlayers, o
         try {
             const r = await api.get(`/rooms/${roomId}/whispers`);
             setWhispers(r.data.whispers || []);
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+            console.warn("whispers load failed", e);
+        }
     };
 
     useEffect(() => { load(); /* eslint-disable-next-line */ }, [roomId]);

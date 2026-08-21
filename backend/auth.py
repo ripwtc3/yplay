@@ -46,7 +46,7 @@ async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     """Dependency that returns the current user dict from Mongo."""
-    from server import db  # avoid circular import
+    from database import db  # avoid circular import via database module
 
     if credentials is None:
         raise HTTPException(status_code=401, detail="لم يتم تسجيل الدخول")
@@ -63,7 +63,7 @@ async def get_current_user(
 
 async def get_user_from_token_str(token: str):
     """For WebSocket auth via query param."""
-    from server import db
+    from database import db
 
     user_id = decode_token(token)
     if not user_id:
