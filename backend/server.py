@@ -540,6 +540,75 @@ async def delete_connected(account_id: str, user=Depends(get_current_user)):
     return {"ok": True}
 
 
+# ============= Player Stats =============
+@api.get("/users/me/stats")
+async def user_stats(user=Depends(get_current_user)):
+    """Aggregate stats across all finished games the user participated in."""
+    user_id = user["id"]
+    sessions = await db.game_sessions.find(
+        {"current_phase": "GAME_OVER", "players.user_id": user_id},
+        {"_id": 0, "players": 1, "winner": 1, "round_number": 1, "ended_at": 1, "room_id": 1},
+    ).to_list(2000)
+
+    total_games = 0
+    wins = 0
+    survived_count = 0
+    role_stats = {r: {"played": 0, "won": 0, "survived": 0} for r in ["MAFIA", "CITIZEN", "DOCTOR", "DETECTIVE"]}
+    recent = []
+
+    for s in sessions:
+        me = next((p for p in s.get("players", []) if p["user_id"] == user_id), None)
+        if not me:
+            continue
+        role = me.get("role")
+        if role not in role_stats:
+            continue
+        total_games += 1
+        role_stats[role]["played"] += 1
+        alive = me.get("alive", False)
+        if alive:
+            survived_count += 1
+            role_stats[role]["survived"] += 1
+        winner = s.get("winner")
+        my_team_won = (winner == "MAFIA" and role == "MAFIA") or (winner == "CITIZENS" and role != "MAFIA")
+        if my_team_won:
+            wins += 1
+            role_stats[role]["won"] += 1
+
+        recent.append({
+            "room_id": s.get("room_id"),
+            "role": role,
+            "won": my_team_won,
+            "survived": alive,
+            "rounds": s.get("round_number", 0),
+            "ended_at": s.get("ended_at"),
+        })
+
+    recent.sort(key=lambda x: x.get("ended_at") or "", reverse=True)
+    recent = recent[:5]
+
+    # best role by win rate (min 2 plays)
+    best_role = None
+    best_wr = -1.0
+    for r, s in role_stats.items():
+        if s["played"] >= 2:
+            wr = s["won"] / s["played"]
+            if wr > best_wr:
+                best_wr = wr
+                best_role = r
+
+    return {
+        "total_games": total_games,
+        "wins": wins,
+        "losses": total_games - wins,
+        "win_rate": round(wins / total_games, 3) if total_games else 0.0,
+        "survived": survived_count,
+        "role_stats": role_stats,
+        "best_role": best_role,
+        "recent": recent,
+    }
+
+
 # ============= WebSocket =============
 @app.websocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):

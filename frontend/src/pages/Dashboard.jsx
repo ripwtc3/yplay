@@ -1,17 +1,23 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Gamepad2, Users, LogOut, Skull, Trophy, Play, UserCircle } from "lucide-react";
+import { Gamepad2, Users, LogOut, Skull, Trophy, Play, UserCircle, Stethoscope, Search, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+
+const ROLE_ICONS = { MAFIA: Skull, CITIZEN: UserIcon, DOCTOR: Stethoscope, DETECTIVE: Search };
+const ROLE_COLORS = { MAFIA: "text-[hsl(355,93%,60%)]", CITIZEN: "text-white/80", DOCTOR: "text-emerald-400", DETECTIVE: "text-cyan-400" };
+const ROLE_AR = { MAFIA: "Mafia", CITIZEN: "Citizen", DOCTOR: "Doctor", DETECTIVE: "Detective" };
 
 export default function Dashboard() {
     const { user, logout } = useAuth();
     const nav = useNavigate();
     const [activeRoom, setActiveRoom] = useState(null);
+    const [stats, setStats] = useState(null);
 
     useEffect(() => {
         api.get("/rooms/mine").then((r) => setActiveRoom(r.data.room)).catch(() => {});
+        api.get("/users/me/stats").then((r) => setStats(r.data)).catch(() => {});
     }, []);
 
     return (
@@ -83,12 +89,86 @@ export default function Dashboard() {
                     </button>
                 </div>
 
-                <div className="mt-12 rounded-2xl border border-white/10 bg-card p-6">
-                    <div className="flex items-center gap-3 mb-2">
+                <div className="mt-12 rounded-2xl border border-white/10 bg-card p-6" data-testid="stats-section">
+                    <div className="flex items-center gap-3 mb-4">
                         <Trophy className="w-5 h-5 text-yellow-400" />
-                        <h4 className="font-display font-bold">إحصائياتك</h4>
+                        <h4 className="font-display font-bold text-lg">إحصائياتك</h4>
                     </div>
-                    <p className="text-white/50 text-sm font-body">قريباً — سنعرض عدد ألعابك، انتصاراتك، وأدوارك المفضلة.</p>
+                    {!stats || stats.total_games === 0 ? (
+                        <p className="text-white/50 text-sm font-body">لم تلعب أي مباراة بعد — أنشئ غرفة أو انضم بكود لبدء الرحلة.</p>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                                <div className="rounded-xl border border-white/10 bg-black/30 p-4">
+                                    <div className="text-xs text-white/50 font-body">مباريات</div>
+                                    <div className="font-display text-3xl font-black mt-1" data-testid="stat-total">{stats.total_games}</div>
+                                </div>
+                                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+                                    <div className="text-xs text-emerald-300 font-body">فوز</div>
+                                    <div className="font-display text-3xl font-black mt-1 text-emerald-300" data-testid="stat-wins">{stats.wins}</div>
+                                </div>
+                                <div className="rounded-xl border border-[hsl(355,93%,46%)]/30 bg-[hsl(355,93%,46%)]/10 p-4">
+                                    <div className="text-xs text-[hsl(355,93%,70%)] font-body">خسارة</div>
+                                    <div className="font-display text-3xl font-black mt-1 text-[hsl(355,93%,70%)]" data-testid="stat-losses">{stats.losses}</div>
+                                </div>
+                                <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4">
+                                    <div className="text-xs text-yellow-300 font-body">نسبة الفوز</div>
+                                    <div className="font-display text-3xl font-black mt-1 text-yellow-300" data-testid="stat-winrate">{Math.round(stats.win_rate * 100)}%</div>
+                                </div>
+                            </div>
+
+                            {/* Roles breakdown */}
+                            <div className="mb-4">
+                                <div className="text-xs text-white/50 font-body mb-2">أدائك حسب الدور</div>
+                                <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-2">
+                                    {Object.entries(stats.role_stats).map(([role, s]) => {
+                                        const Icon = ROLE_ICONS[role];
+                                        const wr = s.played ? Math.round((s.won / s.played) * 100) : 0;
+                                        return (
+                                            <div key={role} data-testid={`role-stat-${role}`} className={`rounded-lg border border-white/10 bg-black/30 p-3 ${stats.best_role === role ? "ring-2 ring-yellow-400/40" : ""}`}>
+                                                <div className="flex items-center gap-2">
+                                                    <Icon className={`w-4 h-4 ${ROLE_COLORS[role]}`} />
+                                                    <span className="font-display font-bold text-sm">{ROLE_AR[role]}</span>
+                                                    {stats.best_role === role && <span className="text-[10px] text-yellow-300">⭐</span>}
+                                                </div>
+                                                <div className="mt-1 text-xs text-white/60 font-body">
+                                                    {s.played} مباراة · {wr}% فوز
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Recent games */}
+                            {stats.recent.length > 0 && (
+                                <div>
+                                    <div className="text-xs text-white/50 font-body mb-2">آخر المباريات</div>
+                                    <div className="space-y-2">
+                                        {stats.recent.map((g, i) => {
+                                            const Icon = ROLE_ICONS[g.role];
+                                            return (
+                                                <div key={i} data-testid={`recent-game-${i}`} className="rounded-lg border border-white/10 bg-black/30 p-3 flex items-center justify-between gap-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Icon className={`w-4 h-4 ${ROLE_COLORS[g.role]}`} />
+                                                        <span className="font-body text-sm">{ROLE_AR[g.role]}</span>
+                                                        <span className="text-xs text-white/40">·</span>
+                                                        <span className="text-xs text-white/50 font-body">{g.rounds} جولة</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {g.survived && <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-body">نجا</span>}
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full font-display font-bold ${g.won ? "bg-emerald-500/20 text-emerald-300" : "bg-[hsl(355,93%,46%)]/20 text-[hsl(355,93%,70%)]"}`}>
+                                                            {g.won ? "فوز" : "خسارة"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
         </div>
