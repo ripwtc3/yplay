@@ -121,14 +121,17 @@ export default function Game() {
     // GAME OVER
     if (phase === "GAME_OVER") {
         const winner = state.session.winner;
+        const highlights = state.session.highlights || [];
         return (
             <div className="min-h-screen noise-bg">
-                <div className="max-w-4xl mx-auto px-6 py-16 text-center fade-in-up">
-                    <Trophy className={`w-20 h-20 mx-auto mb-6 ${winner === "MAFIA" ? "text-[hsl(355,93%,60%)]" : "text-emerald-400"}`} />
-                    <h1 className="font-display text-5xl sm:text-6xl font-black">
-                        {winner === "MAFIA" ? "فوز Mafia" : "فوز المواطنين"}
-                    </h1>
-                    <p className="mt-4 text-white/60 font-body">انتهت اللعبة بعد {roundNum} جولة</p>
+                <div className="max-w-4xl mx-auto px-6 py-16 fade-in-up">
+                    <div className="text-center">
+                        <Trophy className={`w-20 h-20 mx-auto mb-6 ${winner === "MAFIA" ? "text-[hsl(355,93%,60%)]" : "text-emerald-400"}`} />
+                        <h1 className="font-display text-5xl sm:text-6xl font-black">
+                            {winner === "MAFIA" ? "فوز Mafia" : "فوز المواطنين"}
+                        </h1>
+                        <p className="mt-4 text-white/60 font-body">انتهت اللعبة بعد {roundNum} جولة</p>
+                    </div>
                     <div className="mt-10 grid sm:grid-cols-2 md:grid-cols-3 gap-3 text-right">
                         {state.session.players.map((p) => {
                             const m = ROLE_META[p.role];
@@ -144,9 +147,44 @@ export default function Game() {
                             );
                         })}
                     </div>
-                    <Button data-testid="back-home-btn" onClick={() => nav("/dashboard")} className="mt-10 h-14 px-8 bg-[hsl(355,93%,46%)] hover:bg-[hsl(355,93%,40%)] font-display font-bold">
-                        <Home className="w-5 h-5 ms-2" /> عودة للوحة
-                    </Button>
+
+                    {/* Highlights */}
+                    {highlights.length > 0 && (
+                        <div className="mt-12" data-testid="highlights-section">
+                            <h3 className="font-display text-2xl font-black mb-4 flex items-center gap-2">
+                                <span>🔥</span> أبرز اللحظات
+                            </h3>
+                            <div className="space-y-3">
+                                {highlights.map((h, i) => (
+                                    <div
+                                        key={h.id}
+                                        data-testid={`highlight-${i}`}
+                                        className="rounded-xl border border-white/10 bg-gradient-to-br from-yellow-500/10 to-transparent p-4"
+                                    >
+                                        <div className="flex items-baseline justify-between mb-2">
+                                            <div className="font-display font-bold text-cyan-300">{h.sender_display_name}</div>
+                                            <div className="text-xs text-white/40 font-body">جولة {h.round_number}</div>
+                                        </div>
+                                        <div className="font-body text-white/90 mb-3 whitespace-pre-wrap break-words">"{h.message}"</div>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            {Object.entries(h.reactions).map(([emoji, users]) => (
+                                                <span key={emoji} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                                                    <span>{emoji}</span><span className="font-body">{users.length}</span>
+                                                </span>
+                                            ))}
+                                            <span className="text-xs text-white/40 font-body ms-auto">إجمالي {h.total_reactions} تفاعل</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="text-center">
+                        <Button data-testid="back-home-btn" onClick={() => nav("/dashboard")} className="mt-10 h-14 px-8 bg-[hsl(355,93%,46%)] hover:bg-[hsl(355,93%,40%)] font-display font-bold">
+                            <Home className="w-5 h-5 ms-2" /> عودة للوحة
+                        </Button>
+                    </div>
                 </div>
             </div>
         );

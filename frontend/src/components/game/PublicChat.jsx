@@ -99,13 +99,20 @@ export default function PublicChat({ roomId, currentPhase, me, compact = false }
                 {messages.map((m) => {
                     const mine = m.sender_user_id === user?.id;
                     const reactions = m.reactions || {};
+                    const alarm = (reactions["🚨"] || []).length;
+                    const isSuspect = alarm >= 3;
                     return (
-                        <div key={m.id} data-testid={`public-msg-${m.id}`} className="group flex flex-col">
+                        <div
+                            key={m.id}
+                            data-testid={`public-msg-${m.id}`}
+                            className={`group flex flex-col ${isSuspect ? "rounded-lg border border-[hsl(355,93%,46%)]/60 bg-[hsl(355,93%,46%)]/10 p-2 -mx-1 glow-mafia" : ""}`}
+                        >
                             <div className="flex items-baseline">
                                 <span className={`text-xs font-bold ${mine ? "text-emerald-300" : "text-cyan-300"}`}>
                                     {m.sender_display_name}{mine && " (أنت)"}
                                 </span>
                                 <TimeAgo iso={m.created_at} />
+                                {isSuspect && <span data-testid={`suspect-badge-${m.id}`} className="ms-2 text-[10px] px-1.5 py-0.5 rounded-full bg-[hsl(355,93%,46%)] text-white font-body font-bold">🚨 مشتبه به</span>}
                             </div>
                             <div className="text-white/90 whitespace-pre-wrap break-words">{m.message}</div>
                             <div className="flex items-center flex-wrap gap-1 mt-1">

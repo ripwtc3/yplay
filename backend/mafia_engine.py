@@ -23,6 +23,7 @@ from collections import Counter
 
 from ws_manager import ws_manager
 from models import now_iso
+from content_filter import contains_profanity
 
 logger = logging.getLogger(__name__)
 
@@ -266,6 +267,10 @@ class MafiaEngine:
         sender = next((p for p in session["players"] if p["user_id"] == user_id), None)
         sender_name = sender["display_name"] if sender else "Host"
 
+        clean = message.strip()[:500]
+        if contains_profanity(clean):
+            return False, "الرسالة تحتوي كلمات غير مسموحة"
+
         doc = {
             "id": f"msg_{session['id']}_{session['round_number']}_{user_id}_{now_iso()}",
             "session_id": session["id"],
@@ -274,7 +279,7 @@ class MafiaEngine:
             "sender_user_id": user_id,
             "sender_display_name": sender_name,
             "channel_type": "MAFIA",
-            "message": message.strip()[:500],
+            "message": clean,
             "created_at": now_iso(),
         }
         await self.db.game_messages.insert_one(doc)
@@ -329,6 +334,10 @@ class MafiaEngine:
         sender = next((p for p in session["players"] if p["user_id"] == user_id), None)
         sender_name = sender["display_name"] if sender else "Host"
 
+        clean = message.strip()[:500]
+        if contains_profanity(clean):
+            return False, "الرسالة تحتوي كلمات غير مسموحة"
+
         doc = {
             "id": f"pmsg_{session['id']}_{session['round_number']}_{user_id}_{now_iso()}",
             "session_id": session["id"],
@@ -337,7 +346,7 @@ class MafiaEngine:
             "sender_user_id": user_id,
             "sender_display_name": sender_name,
             "channel_type": "PUBLIC",
-            "message": message.strip()[:500],
+            "message": clean,
             "created_at": now_iso(),
         }
         await self.db.game_messages.insert_one(doc)
@@ -768,13 +777,40 @@ class MafiaEngine:
                  "role": p["role"], "alive": p["alive"]}
                 for p in session["players"]
             ]
+            # Compute Highlights: top-3 PUBLIC messages by total reactions
+            public_msgs = await self.db.game_messages.find(
+                {"room_id": room_id, "channel_type": "PUBLIC"},
+                {"_id": 0},
+            ).to_list(2000)
+            highlights = []
+            for m in public_msgs:
+                reactions = m.get("reactions", {}) or {}
+                total = sum(len(u) for u in reactions.values())
+                if total > 0:
+                    highlights.append({
+                        "id": m["id"],
+                        "sender_display_name": m["sender_display_name"],
+                        "message": m["message"],
+                        "round_number": m["round_number"],
+                        "created_at": m["created_at"],
+                        "reactions": reactions,
+                        "total_reactions": total,
+                    })
+            highlights.sort(key=lambda x: x["total_reactions"], reverse=True)
+            top_highlights = highlights[:3]
+
             await ws_manager.broadcast_room(room_id, {
                 "type": "GAME_OVER",
                 "winner": winner,
                 "players": final_players,
                 "round_number": session["round_number"],
+                "highlights": top_highlights,
             })
-            # clear mafia channel
+            # persist highlights on the session too
+            await self.db.game_sessions.update_one(
+                {"room_id": room_id},
+                {"$set": {"highlights": top_highlights}},
+            )
             ws_manager.set_mafia_members(room_id, set())
             return True
         return False

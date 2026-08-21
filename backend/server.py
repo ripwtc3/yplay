@@ -376,6 +376,7 @@ async def game_state(room_id: str, user=Depends(get_current_user)):
                 "phase_ends_at": session.get("phase_ends_at"),
                 "winner": session.get("winner"),
                 "players": public_players,
+                "highlights": session.get("highlights", []) if session.get("current_phase") == "GAME_OVER" else [],
             },
             "me": {
                 "user_id": user["id"],
