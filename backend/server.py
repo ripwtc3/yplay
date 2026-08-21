@@ -16,7 +16,7 @@ from models import (
     RegisterRequest, LoginRequest, AuthResponse, UserPublic,
     CreateRoomRequest, JoinRoomRequest, RoomPublic, MafiaSettings,
     NightActionRequest, VoteRequest, MafiaMessageRequest, MafiaTargetVoteRequest,
-    PublicMessageRequest, ReactionRequest,
+    PublicMessageRequest, ReactionRequest, WhisperRequest,
     ConnectedAccountCreate, ConnectedAccountPublic, uid, now_iso,
 )
 from auth import (
@@ -458,6 +458,23 @@ async def toggle_message_reaction(room_id: str, message_id: str, payload: Reacti
     if not ok:
         raise HTTPException(403, msg)
     return {"ok": True, "reactions": reactions}
+
+
+# ============= Whisper (private 1-to-1) =============
+@api.post("/rooms/{room_id}/whisper")
+async def send_whisper(room_id: str, payload: WhisperRequest, user=Depends(get_current_user)):
+    ok, msg = await get_engine().send_whisper(room_id, user["id"], payload.target_user_id, payload.message)
+    if not ok:
+        raise HTTPException(403, msg)
+    return {"ok": True, "message": msg}
+
+
+@api.get("/rooms/{room_id}/whispers")
+async def get_whispers(room_id: str, user=Depends(get_current_user)):
+    ok, msgs = await get_engine().list_whispers(room_id, user["id"])
+    if not ok:
+        raise HTTPException(403, "غير مسموح")
+    return {"whispers": msgs}
 
 
 # ============= Connected Accounts =============

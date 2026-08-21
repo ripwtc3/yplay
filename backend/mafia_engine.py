@@ -391,6 +391,93 @@ class MafiaEngine:
             for m in msgs
         ]
 
+    # ---------- Whisper (private 1-to-1) ----------
+    async def send_whisper(self, room_id: str, sender_id: str, target_id: str, message: str) -> Tuple[bool, str]:
+        session = await self._get_session(room_id)
+        if not session:
+            return False, "الجلسة غير موجودة"
+        if session["current_phase"] not in ("DISCUSSION", "VOTING", "NIGHT_RESULT", "VOTE_RESULT"):
+            return False, "الهمس متاح فقط أثناء النهار"
+        if sender_id == target_id:
+            return False, "لا يمكنك الهمس لنفسك"
+        # Both must be members and alive
+        sender_role = self._get_role(session, sender_id)
+        target_role = self._get_role(session, target_id)
+        if not sender_role or not target_role:
+            return False, "اللاعب غير موجود في الغرفة"
+        if not self._is_alive(session, sender_id) or not self._is_alive(session, target_id):
+            return False, "الهمس متاح فقط بين الأحياء"
+
+        clean = message.strip()[:500]
+        if contains_profanity(clean):
+            return False, "الرسالة تحتوي كلمات غير مسموحة"
+
+        sender = next((p for p in session["players"] if p["user_id"] == sender_id), None)
+        target = next((p for p in session["players"] if p["user_id"] == target_id), None)
+        sender_name = sender["display_name"] if sender else ""
+        target_name = target["display_name"] if target else ""
+
+        doc = {
+            "id": f"wmsg_{session['id']}_{session['round_number']}_{sender_id}_{target_id}_{now_iso()}",
+            "session_id": session["id"],
+            "room_id": room_id,
+            "round_number": session["round_number"],
+            "sender_user_id": sender_id,
+            "sender_display_name": sender_name,
+            "target_user_id": target_id,
+            "target_display_name": target_name,
+            "channel_type": "WHISPER",
+            "message": clean,
+            "created_at": now_iso(),
+        }
+        await self.db.game_messages.insert_one(doc)
+
+        payload = {
+            "type": "WHISPER_MESSAGE",
+            "message": {
+                "id": doc["id"],
+                "sender_user_id": sender_id,
+                "sender_display_name": sender_name,
+                "target_user_id": target_id,
+                "target_display_name": target_name,
+                "message": clean,
+                "round_number": doc["round_number"],
+                "created_at": doc["created_at"],
+            },
+        }
+        # Deliver ONLY to sender and target — never broadcast
+        await ws_manager.send_to_user(sender_id, payload)
+        await ws_manager.send_to_user(target_id, payload)
+        return True, "تم الإرسال"
+
+    async def list_whispers(self, room_id: str, user_id: str) -> Tuple[bool, List[dict]]:
+        session = await self._get_session(room_id)
+        if not session:
+            return False, []
+        # Must be a player in this game
+        if not self._get_role(session, user_id):
+            return False, []
+        # Only whispers involving this user
+        cursor = self.db.game_messages.find({
+            "room_id": room_id,
+            "channel_type": "WHISPER",
+            "$or": [{"sender_user_id": user_id}, {"target_user_id": user_id}],
+        }, {"_id": 0}).sort("created_at", 1)
+        msgs = await cursor.to_list(500)
+        return True, [
+            {
+                "id": m["id"],
+                "sender_user_id": m["sender_user_id"],
+                "sender_display_name": m["sender_display_name"],
+                "target_user_id": m["target_user_id"],
+                "target_display_name": m["target_display_name"],
+                "message": m["message"],
+                "round_number": m["round_number"],
+                "created_at": m["created_at"],
+            }
+            for m in msgs
+        ]
+
     # ---------- Reactions (toggle) ----------
     ALLOWED_EMOJIS = {"👍", "👎", "🤔", "🚨", "❤️", "🔥"}
 

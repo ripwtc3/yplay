@@ -109,6 +109,11 @@ class ReactionRequest(BaseModel):
     emoji: str = Field(min_length=1, max_length=8)
 
 
+class WhisperRequest(BaseModel):
+    target_user_id: str
+    message: str = Field(min_length=1, max_length=500)
+
+
 class MafiaTargetVoteRequest(BaseModel):
     target_user_id: str
 

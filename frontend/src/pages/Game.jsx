@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Skull, Stethoscope, Search, User, Moon, Sun, Vote, Trophy, Home, Eye, EyeOff } from "lucide-react";
 import MafiaRoom from "@/components/game/MafiaRoom";
 import PublicChat from "@/components/game/PublicChat";
+import WhisperPanel from "@/components/game/WhisperPanel";
 
 const ROLE_META = {
     MAFIA: { label: "Mafia", icon: Skull, color: "hsl(355,93%,60%)", bg: "from-[hsl(355,93%,46%)]/20", glow: "glow-mafia", desc: "هدفك القضاء على المواطنين" },
@@ -281,6 +282,10 @@ export default function Game() {
                 )}
 
                 {/* Public chat + Voting side-by-side on desktop during DISCUSSION/VOTING */}
+                {["DISCUSSION", "VOTING", "NIGHT_RESULT", "VOTE_RESULT"].includes(phase) && me.alive && (
+                    <WhisperPanel roomId={roomId} currentPhase={phase} me={me} alivePlayers={alivePlayers} />
+                )}
+
                 {phase === "VOTING" ? (
                     <div className="grid lg:grid-cols-5 gap-4 mb-6">
                         {/* Voting panel */}
