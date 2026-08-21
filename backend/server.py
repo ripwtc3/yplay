@@ -16,7 +16,7 @@ from models import (
     RegisterRequest, LoginRequest, AuthResponse, UserPublic,
     CreateRoomRequest, JoinRoomRequest, RoomPublic, MafiaSettings,
     NightActionRequest, VoteRequest, MafiaMessageRequest, MafiaTargetVoteRequest,
-    PublicMessageRequest,
+    PublicMessageRequest, ReactionRequest,
     ConnectedAccountCreate, ConnectedAccountPublic, uid, now_iso,
 )
 from auth import (
@@ -449,6 +449,14 @@ async def list_public_messages(room_id: str, user=Depends(get_current_user)):
     if not ok:
         raise HTTPException(403, "غير مسموح")
     return {"messages": msgs}
+
+
+@api.post("/rooms/{room_id}/messages/{message_id}/react")
+async def toggle_message_reaction(room_id: str, message_id: str, payload: ReactionRequest, user=Depends(get_current_user)):
+    ok, msg, reactions = await get_engine().toggle_reaction(room_id, user["id"], message_id, payload.emoji)
+    if not ok:
+        raise HTTPException(403, msg)
+    return {"ok": True, "reactions": reactions}
 
 
 # ============= Connected Accounts =============

@@ -242,38 +242,53 @@ export default function Game() {
                     </div>
                 )}
 
-                {/* Public chat during day */}
-                {["DISCUSSION", "VOTING", "NIGHT_RESULT", "VOTE_RESULT"].includes(phase) && (
-                    <PublicChat roomId={roomId} currentPhase={phase} me={me} />
-                )}
-
-                {/* VOTING */}
-                {phase === "VOTING" && me.alive && !me.vote && (
-                    <div className="mb-6 fade-in-up">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Vote className="w-5 h-5 text-[hsl(355,93%,60%)]" />
-                            <h3 className="font-display text-xl font-bold">اختر لاعباً للإقصاء</h3>
+                {/* Public chat + Voting side-by-side on desktop during DISCUSSION/VOTING */}
+                {phase === "VOTING" ? (
+                    <div className="grid lg:grid-cols-5 gap-4 mb-6">
+                        {/* Voting panel */}
+                        <div className="lg:col-span-3 fade-in-up">
+                            {me.alive && !me.vote && (
+                                <div>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <Vote className="w-5 h-5 text-[hsl(355,93%,60%)]" />
+                                        <h3 className="font-display text-xl font-bold">اختر لاعباً للإقصاء</h3>
+                                    </div>
+                                    <div className="grid sm:grid-cols-2 gap-3">
+                                        {alivePlayers.filter(p => p.user_id !== user.id).map((p) => (
+                                            <button
+                                                key={p.user_id}
+                                                data-testid={`vote-btn-${p.user_id}`}
+                                                disabled={busy}
+                                                onClick={() => submitVote(p.user_id)}
+                                                className="rounded-xl border border-white/10 bg-card p-4 hover:border-[hsl(355,93%,46%)] hover:bg-[hsl(355,93%,46%)]/10 transition-colors text-right"
+                                            >
+                                                <div className="font-display font-bold text-lg">{p.display_name}</div>
+                                                <div className="text-xs text-white/50 font-body">@{p.username}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {me.alive && me.vote && (
+                                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 font-body text-emerald-300 text-center">
+                                    ✓ تم تسجيل تصويتك — بانتظار الباقين
+                                </div>
+                            )}
+                            {!me.alive && (
+                                <div className="rounded-xl border border-white/10 bg-card p-6 text-center text-white/60 font-body">
+                                    خرجت من اللعبة — يمكنك متابعة النقاش فقط
+                                </div>
+                            )}
                         </div>
-                        <div className="grid sm:grid-cols-2 gap-3">
-                            {alivePlayers.filter(p => p.user_id !== user.id).map((p) => (
-                                <button
-                                    key={p.user_id}
-                                    data-testid={`vote-btn-${p.user_id}`}
-                                    disabled={busy}
-                                    onClick={() => submitVote(p.user_id)}
-                                    className="rounded-xl border border-white/10 bg-card p-4 hover:border-[hsl(355,93%,46%)] hover:bg-[hsl(355,93%,46%)]/10 transition-colors text-right"
-                                >
-                                    <div className="font-display font-bold text-lg">{p.display_name}</div>
-                                    <div className="text-xs text-white/50 font-body">@{p.username}</div>
-                                </button>
-                            ))}
+                        {/* Chat side */}
+                        <div className="lg:col-span-2">
+                            <PublicChat roomId={roomId} currentPhase={phase} me={me} compact />
                         </div>
                     </div>
-                )}
-                {phase === "VOTING" && me.vote && (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 mb-6 font-body text-emerald-300 text-center">
-                        ✓ تم تسجيل تصويتك — بانتظار الباقين
-                    </div>
+                ) : (
+                    ["DISCUSSION", "NIGHT_RESULT", "VOTE_RESULT"].includes(phase) && (
+                        <PublicChat roomId={roomId} currentPhase={phase} me={me} />
+                    )
                 )}
 
                 {investigation && me.role === "DETECTIVE" && (

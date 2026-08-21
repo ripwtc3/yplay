@@ -377,9 +377,71 @@ class MafiaEngine:
                 "message": m["message"],
                 "round_number": m["round_number"],
                 "created_at": m["created_at"],
+                "reactions": m.get("reactions", {}),
             }
             for m in msgs
         ]
+
+    # ---------- Reactions (toggle) ----------
+    ALLOWED_EMOJIS = {"👍", "👎", "🤔", "🚨", "❤️", "🔥"}
+
+    async def toggle_reaction(self, room_id: str, user_id: str, message_id: str, emoji: str) -> Tuple[bool, str, Optional[dict]]:
+        if emoji not in self.ALLOWED_EMOJIS:
+            return False, "إيموجي غير مسموح", None
+        session = await self._get_session(room_id)
+        if not session:
+            return False, "الجلسة غير موجودة", None
+
+        msg = await self.db.game_messages.find_one({"id": message_id, "room_id": room_id}, {"_id": 0})
+        if not msg:
+            return False, "الرسالة غير موجودة", None
+
+        # Authorization: for PUBLIC channel any member can react. For MAFIA channel only mafia members.
+        role = self._get_role(session, user_id)
+        is_host = user_id == session["host_id"]
+        if msg.get("channel_type") == "MAFIA":
+            alive = self._is_alive(session, user_id)
+            is_host_viewer = is_host and session["settings"].get("host_can_view_mafia_chat")
+            if not ((role == "MAFIA" and alive) or is_host_viewer):
+                return False, "غير مسموح", None
+        else:
+            if not role and not is_host:
+                return False, "غير مسموح", None
+
+        reactions = msg.get("reactions", {}) or {}
+        users = list(reactions.get(emoji, []))
+        added = False
+        if user_id in users:
+            users.remove(user_id)
+        else:
+            users.append(user_id)
+            added = True
+
+        if users:
+            reactions[emoji] = users
+        else:
+            reactions.pop(emoji, None)
+
+        await self.db.game_messages.update_one(
+            {"id": message_id},
+            {"$set": {"reactions": reactions}},
+        )
+
+        payload = {
+            "type": "MESSAGE_REACTION",
+            "message_id": message_id,
+            "channel_type": msg.get("channel_type"),
+            "emoji": emoji,
+            "user_id": user_id,
+            "added": added,
+            "reactions": reactions,
+        }
+        # Broadcast only to the appropriate channel
+        if msg.get("channel_type") == "MAFIA":
+            await ws_manager.broadcast_mafia(room_id, payload)
+        else:
+            await ws_manager.broadcast_room(room_id, payload)
+        return True, "تم", reactions
 
     # ---------- Mafia Target Voting ----------
     async def submit_mafia_target_vote(self, room_id: str, user_id: str, target_id: str) -> Tuple[bool, str]:
@@ -469,6 +531,7 @@ class MafiaEngine:
                 "message": m["message"],
                 "round_number": m["round_number"],
                 "created_at": m["created_at"],
+                "reactions": m.get("reactions", {}),
             } for m in msgs_docs]
 
         return {
